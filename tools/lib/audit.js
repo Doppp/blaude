@@ -160,7 +160,13 @@ async function auditFile(file, { widths = WIDTHS, schemes = SCHEMES, screenshots
         for (const i of issues) out.issues.push({ width, scheme, ...i });
         if (screenshots && (width === 390 || width === 1280)) {
           const name = `${screenshots.prefix}-${width}-${scheme}.png`;
-          await page.screenshot({ path: path.join(screenshots.dir, name), fullPage: true });
+          // Very tall pages (the 500-post index) exceed what headless Chromium can capture: cap the height.
+          const h = await page.evaluate(() => document.documentElement.scrollHeight);
+          try {
+            await page.screenshot({ path: path.join(screenshots.dir, name), fullPage: true, clip: { x: 0, y: 0, width, height: Math.min(h, 8000) } });
+          } catch (e) {
+            console.warn(`  warn: no screenshot of ${name}: ${e.message.split('\n')[0]}`);
+          }
         }
         await ctx.close();
       }
