@@ -86,6 +86,15 @@ function themePages(name, dir) {
   return pages;
 }
 
+const galleryThemes = [];
+
+function writeGallery(list) {
+  const rows = list.map((m) => `## ${m.displayName} (\`${m.name}\`)\n\n${m.description}\n\nIndex layout: ${m.indexLayout}. By ${m.author}. [Preview page](../../skills/blaude/themes/${m.name}/preview.html)\n\n| Index, phone | Post, phone | Index, desktop |\n| --- | --- | --- |\n| <img src=\"${m.name}-index-phone.png\" width=\"200\" alt=\"${m.displayName} index on a phone\"> | <img src=\"${m.name}-phone.png\" width=\"200\" alt=\"${m.displayName} post on a phone\"> | <img src=\"${m.name}-index-desktop.png\" width=\"420\" alt=\"${m.displayName} index on a desktop\"> |\n`);
+  const text = `# Theme gallery\n\nEvery theme in \`skills/blaude/themes\`, rendered by \`node tools/check-theme.js --gallery\` in light mode. The phone shots are 390 px wide; the desktop shots 1280 px.\n\n${rows.join('\n')}\nTo add yours, see [CONTRIBUTING.md](../../CONTRIBUTING.md).\n`;
+  fs.writeFileSync(path.join(ROOT, 'docs/gallery/README.md'), text);
+  console.log('wrote docs/gallery/README.md');
+}
+
 async function main() {
   const args = process.argv.slice(2);
   const flags = new Set(args.filter((a) => a.startsWith('--')));
@@ -163,9 +172,10 @@ async function main() {
         if (flags.has('--gallery')) {
           const g = path.join(ROOT, 'docs/gallery');
           fs.mkdirSync(g, { recursive: true });
-          for (const [from, to] of [['preview-390-light.png', `${name}-phone.png`], ['preview-1280-light.png', `${name}-desktop.png`], ['index-390-light.png', `${name}-index-phone.png`], ['index-1280-light.png', `${name}-index-desktop.png`]]) {
+          for (const [from, to] of [['preview-390-light.png', `${name}-phone.png`], ['index-390-light.png', `${name}-index-phone.png`], ['index-1280-light.png', `${name}-index-desktop.png`]]) {
             if (fs.existsSync(path.join(shots, from))) fs.copyFileSync(path.join(shots, from), path.join(g, to));
           }
+          galleryThemes.push(meta);
         }
       }
 
@@ -178,6 +188,7 @@ async function main() {
   } finally {
     if (browser) await browser.close();
   }
+  if (flags.has('--gallery') && galleryThemes.length) writeGallery(galleryThemes);
   console.log(failed ? `\ncheck-theme: ${failed} failed` : `\ncheck-theme: all passed`);
   process.exitCode = failed ? 1 : 0;
 }

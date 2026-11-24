@@ -1,0 +1,38 @@
+/* Featured: the Ledger tokens with the Featured index layout. */
+:root{
+  color-scheme:light dark;
+  --bl-bg:light-dark(#ffffff,#131417);
+  --bl-surface:light-dark(#f3f4f6,#1d1f24);
+  --bl-ink:light-dark(#1a1b1f,#e9e9ec);
+  --bl-ink-muted:light-dark(#5d6170,#a3a7b3);
+  --bl-accent:light-dark(#2950b8,#93adff);
+  --bl-accent-ink:light-dark(#ffffff,#0f1320);
+  --bl-rule:light-dark(#e2e4e9,#2c2f36);
+  --bl-good:light-dark(#1d7a4a,#6fd39b);
+  --bl-warn:light-dark(#a35a00,#f0b25a);
+  --bl-bad:light-dark(#b42318,#ff8f86);
+  --bl-chart-1:light-dark(#2950b8,#93adff);
+  --bl-chart-2:light-dark(#a35a00,#f0b25a);
+  --bl-chart-3:light-dark(#1d7a4a,#6fd39b);
+  --bl-chart-4:light-dark(#7a3db8,#c9a2ff);
+  --bl-chart-5:light-dark(#b42318,#ff8f86);
+  --bl-chart-6:light-dark(#0e7490,#5fd0e6);
+  --bl-term-bg:light-dark(#16181d,#0b0c0f);
+  --bl-term-ink:light-dark(#e6e7ea,#e6e7ea);
+  --bl-term-dim:light-dark(#8b90a0,#8b90a0);
+  --bl-term-ok:light-dark(#7fd8a4,#7fd8a4);
+  --bl-term-key:light-dark(#9fb7ff,#9fb7ff);
+  --bl-term-rule:light-dark(#3a3e48,#2a2d35);
+  --bl-font-body:'Literata',Georgia,serif;
+  --bl-font-heading:'Instrument Sans',system-ui,sans-serif;
+  --bl-font-mono:'JetBrains Mono',ui-monospace,monospace;
+  --bl-size-body:17px;
+  --bl-measure:680px;
+  --bl-radius:10px;
+  --bl-s1:8px;
+  --bl-s2:16px;
+  --bl-s3:24px;
+  --bl-s4:40px;
+}
+:root[data-theme=light]{color-scheme:light}
+:root[data-theme=dark]{color-scheme:dark}

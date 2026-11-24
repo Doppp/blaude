@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>How a post gets published · Blaude</title>
+<meta name="description" content="From a draft in chat to a public page on your blog, in five steps.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="How a post gets published">
+<meta property="og:description" content="From a draft in chat to a public page on your blog, in five steps.">
+<meta property="og:site_name" content="Blaude">
+<meta property="article:published_time" content="2026-11-24">
+<meta name="twitter:card" content="summary">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;1,7..72,400&amp;family=Instrument+Sans:wght@400;600&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap">
+<style>
+:root{
+  color-scheme:light dark;
+  --bl-bg:light-dark(#ffffff,#131417);
+  --bl-surface:light-dark(#f3f4f6,#1d1f24);
+  --bl-ink:light-dark(#1a1b1f,#e9e9ec);
+  --bl-ink-muted:light-dark(#5d6170,#a3a7b3);
+  --bl-accent:light-dark(#2950b8,#93adff);
+  --bl-accent-ink:light-dark(#ffffff,#0f1320);
+  --bl-rule:light-dark(#e2e4e9,#2c2f36);
+  --bl-good:light-dark(#1d7a4a,#6fd39b);
+  --bl-warn:light-dark(#a35a00,#f0b25a);
+  --bl-bad:light-dark(#b42318,#ff8f86);
+  --bl-chart-1:light-dark(#2950b8,#93adff);
+  --bl-chart-2:light-dark(#a35a00,#f0b25a);
+  --bl-chart-3:light-dark(#1d7a4a,#6fd39b);
+  --bl-chart-4:light-dark(#7a3db8,#c9a2ff);
+  --bl-chart-5:light-dark(#b42318,#ff8f86);
+  --bl-chart-6:light-dark(#0e7490,#5fd0e6);
+  --bl-term-bg:light-dark(#16181d,#0b0c0f);
+  --bl-term-ink:light-dark(#e6e7ea,#e6e7ea);
+  --bl-term-dim:light-dark(#8b90a0,#8b90a0);
+  --bl-term-ok:light-dark(#7fd8a4,#7fd8a4);
+  --bl-term-key:light-dark(#9fb7ff,#9fb7ff);
+  --bl-term-rule:light-dark(#3a3e48,#2a2d35);
+  --bl-font-body:'Literata',Georgia,serif;
+  --bl-font-heading:'Instrument Sans',system-ui,sans-serif;
+  --bl-font-mono:'JetBrains Mono',ui-monospace,monospace;
+  --bl-size-body:17px;
+  --bl-measure:680px;
+  --bl-radius:10px;
+  --bl-s1:8px;
+  --bl-s2:16px;
+  --bl-s3:24px;
+  --bl-s4:40px;
+}
+:root[data-theme=light]{color-scheme:light}
+:root[data-theme=dark]{color-scheme:dark}
+/* Blaude base.css: layout and typography for posts and indexes.
+   Reads theme tokens only (var(--bl-*)). Spacing uses only --bl-s1..--bl-s4.
+   Header, body and footer share one column: .bl-col. */
+
+:root{
+  color-scheme:light dark;
+  --bl-pad:max(5vw,20px,env(safe-area-inset-left),env(safe-area-inset-right));
+}
+:root[data-theme=light]{color-scheme:light}
+:root[data-theme=dark]{color-scheme:dark}
+
+*,*::before,*::after{box-sizing:border-box;min-width:0}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%;scroll-padding-top:calc(44px + var(--bl-s4))}
+body{margin:0;background:var(--bl-bg);color:var(--bl-ink);font:var(--bl-size-body)/1.65 var(--bl-font-body);overflow-x:clip;overflow-wrap:break-word}
+img,svg,video{max-width:100%}
+img{height:auto}
+a{color:var(--bl-accent);text-underline-offset:.2em;text-decoration-thickness:1px}
+:focus-visible{outline:2px solid var(--bl-accent);outline-offset:2px}
+[hidden]{display:none!important}
+
+/* One column */
+.bl-col{max-width:calc(var(--bl-measure) + 2*var(--bl-pad));margin-inline:auto;padding-inline:var(--bl-pad)}
+
+/* Tap targets: at least 44 x 44 */
+.bl-hit{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px}
+
+/* Buttons */
+.bl-btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;padding:0 var(--bl-s2);border-radius:var(--bl-radius);border:1px solid var(--bl-rule);background:var(--bl-surface);color:var(--bl-ink);font:600 15px/1 var(--bl-font-heading);cursor:pointer;flex:none}
+.bl-btn--primary{background:var(--bl-accent);border-color:var(--bl-accent);color:var(--bl-accent-ink)}
+.bl-btn--quiet{background:var(--bl-bg);font-size:13px}
+.bl-btn:disabled{opacity:.4;cursor:default}
+.bl-textbtn{display:inline-flex;align-items:center;min-height:44px;min-width:44px;padding:0;border:0;background:none;font:inherit;color:var(--bl-accent);cursor:pointer}
+
+/* Sticky post header */
+.bl-bar{position:sticky;top:0;z-index:5;background:var(--bl-bg);border-bottom:1px solid var(--bl-rule);font:600 15px/1.2 var(--bl-font-heading);padding-top:env(safe-area-inset-top)}
+.bl-bar .bl-col{display:flex;justify-content:space-between;align-items:center;gap:var(--bl-s2);min-height:calc(44px + var(--bl-s1))}
+.bl-bar a{display:inline-flex;align-items:center;min-height:44px;min-width:44px;color:var(--bl-ink);text-decoration:none}
+.bl-bar nav{display:flex;gap:var(--bl-s3)}
+.bl-bar nav a{justify-content:flex-end;color:var(--bl-ink-muted);font-weight:400}
+.bl-bar a:hover{color:var(--bl-accent)}
+
+/* Post */
+.bl-post{padding-top:var(--bl-s4)}
+.bl-title{font:600 clamp(30px,5.6vw,40px)/1.12 var(--bl-font-heading);letter-spacing:-.015em;margin:0 0 var(--bl-s2)}
+.bl-meta{display:flex;flex-wrap:wrap;align-items:center;gap:var(--bl-s1) var(--bl-s2);margin:0 0 var(--bl-s4);font:14px/1.4 var(--bl-font-heading);color:var(--bl-ink-muted)}
+.bl-body h2{font:600 24px/1.2 var(--bl-font-heading);margin:var(--bl-s4) 0 var(--bl-s1)}
+.bl-body h3{font:600 19px/1.3 var(--bl-font-heading);margin:var(--bl-s3) 0 var(--bl-s1)}
+.bl-body h4{font:600 17px/1.3 var(--bl-font-heading);margin:var(--bl-s3) 0 var(--bl-s1)}
+.bl-body p{margin:0 0 var(--bl-s2);text-wrap:pretty}
+.bl-body>p:first-child{font-size:20px;line-height:1.55}
+.bl-body ul,.bl-body ol{margin:0 0 var(--bl-s2);padding-left:var(--bl-s3)}
+.bl-body li>p{margin:0}
+.bl-body blockquote{margin:0 0 var(--bl-s2);padding-left:var(--bl-s2);border-left:3px solid var(--bl-rule);color:var(--bl-ink-muted)}
+.bl-body hr{border:0;border-top:1px solid var(--bl-rule);margin:var(--bl-s4) 0}
+.bl-body code{font-family:var(--bl-font-mono);font-size:.88em;background:var(--bl-surface);border-radius:calc(var(--bl-radius)/2);box-shadow:0 0 0 2px var(--bl-surface)}
+.bl-body pre{margin:0 0 var(--bl-s3);padding:var(--bl-s2);background:var(--bl-surface);border-radius:var(--bl-radius);overflow-x:auto;font:14px/1.6 var(--bl-font-mono)}
+.bl-body pre code{font-size:inherit;background:none;box-shadow:none;border-radius:0}
+.bl-body img{display:block;border-radius:var(--bl-radius)}
+
+/* Tables scroll inside their own box */
+.bl-table{overflow-x:auto;margin:0 0 var(--bl-s3)}
+.bl-table table{border-collapse:collapse;width:100%;font:15px/1.4 var(--bl-font-heading)}
+.bl-table th,.bl-table td{text-align:left;padding:var(--bl-s1) var(--bl-s2) var(--bl-s1) 0;border-bottom:1px solid var(--bl-rule);vertical-align:top}
+.bl-table th{font-weight:600}
+.bl-table td.bl-num,.bl-table th.bl-num{text-align:right;font-variant-numeric:tabular-nums}
+
+/* Related links */
+.bl-related{margin-top:var(--bl-s4);padding-top:var(--bl-s3);border-top:1px solid var(--bl-rule)}
+.bl-related h2{font:600 15px/1.2 var(--bl-font-heading);margin:0}
+.bl-related ul{list-style:none;margin:var(--bl-s1) 0 0;padding:0}
+.bl-related a{display:flex;flex-direction:column;justify-content:center;min-height:44px;padding-block:var(--bl-s1);color:var(--bl-ink);text-decoration:none;font:17px/1.4 var(--bl-font-heading)}
+.bl-related a:hover .bl-related-t{color:var(--bl-accent)}
+.bl-related-n{font-size:14px;color:var(--bl-ink-muted)}
+
+/* Footer */
+.bl-foot{margin-top:var(--bl-s4);border-top:1px solid var(--bl-rule);font:15px/1.5 var(--bl-font-heading);color:var(--bl-ink-muted)}
+.bl-foot .bl-col{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:0 var(--bl-s2);padding-top:var(--bl-s2);padding-bottom:max(var(--bl-s4),env(safe-area-inset-bottom))}
+.bl-foot a{display:inline-flex;align-items:center;min-height:44px}
+
+/* Reserve the height of the tallest item: children share one grid cell */
+.bl-stack{display:grid}
+.bl-stack>*{grid-area:1/1}
+.bl-stack>[aria-hidden=true]{visibility:hidden}
+
+/* Visually hidden, still read aloud */
+.bl-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
+}
+/* pullquote */
+.bl-pullquote{margin:var(--bl-s4) 0}
+.bl-pullquote blockquote{margin:0;padding:0;border:0;font:italic 26px/1.35 var(--bl-font-body);color:var(--bl-ink)}
+.bl-pullquote blockquote::before{content:"";display:block;width:40px;height:3px;background:var(--bl-accent);margin-bottom:var(--bl-s2)}
+.bl-pullquote blockquote p{margin:0;text-wrap:pretty}
+.bl-pullquote figcaption{margin-top:var(--bl-s1);font:14px/1.5 var(--bl-font-heading);color:var(--bl-ink-muted)}
+/* callout */
+.bl-callout{--bl-callout:var(--bl-accent);margin:var(--bl-s3) 0;padding:var(--bl-s2);border-left:3px solid var(--bl-callout);border-radius:0 var(--bl-radius) var(--bl-radius) 0;background:var(--bl-surface);font:16px/1.55 var(--bl-font-heading)}
+.bl-callout--tip{--bl-callout:var(--bl-good)}
+.bl-callout--warning{--bl-callout:var(--bl-warn)}
+.bl-callout p{margin:0}
+.bl-callout p+p{margin-top:var(--bl-s1)}
+.bl-callout>p:first-child>strong:first-child{color:var(--bl-callout)}
+/* stepper */
+.bl-stepper{margin:var(--bl-s4) 0;padding:var(--bl-s3) 0;border-top:1px solid var(--bl-rule);border-bottom:1px solid var(--bl-rule)}
+.bl-stepper-fig svg{display:block;width:100%;overflow:visible}
+.bl-stepper-steps{margin:0;padding-left:var(--bl-s3);font:16px/1.5 var(--bl-font-heading)}
+.bl-stepper-steps li+li{margin-top:var(--bl-s1)}
+.bl-stepper-steps strong{font-size:18px}
+.bl-stepper.is-live .bl-stepper-steps{display:grid;list-style:none;padding:0;margin:var(--bl-s2) 0 var(--bl-s1)}
+.bl-stepper.is-live .bl-stepper-steps li{grid-area:1/1;margin:0}
+.bl-stepper.is-live .bl-stepper-steps li[aria-hidden=true]{visibility:hidden}
+.bl-stepper.is-live .bl-stepper-steps strong{display:block}
+.bl-stepper-controls{display:flex;align-items:center;gap:var(--bl-s1);font:14px/1.2 var(--bl-font-heading)}
+.bl-stepper-count{margin-left:auto;color:var(--bl-ink-muted)}
+.bl-stepper figcaption{margin-top:var(--bl-s2);font:14px/1.5 var(--bl-font-heading);color:var(--bl-ink-muted)}
+.bl-stepper .bl-st-track{stroke:var(--bl-rule);stroke-width:3}
+.bl-stepper .bl-st-progress{stroke:var(--bl-accent);stroke-width:3;transition:stroke-dashoffset .35s ease}
+.bl-stepper .bl-st-dot{fill:var(--bl-bg);stroke:var(--bl-rule);stroke-width:2;transform-box:fill-box;transform-origin:center;transition:fill .35s,stroke .35s,transform .35s}
+.bl-stepper .bl-st-dot.is-done{fill:var(--bl-accent);stroke:var(--bl-accent)}
+.bl-stepper .bl-st-dot.is-on{transform:scale(1.25)}
+.bl-stepper .bl-st-num{font-family:var(--bl-font-heading);font-weight:600;fill:var(--bl-ink-muted);text-anchor:middle;dominant-baseline:central}
+.bl-stepper .bl-st-num.is-done{fill:var(--bl-accent-ink)}
+.bl-stepper .bl-st-label{font-family:var(--bl-font-heading);font-size:13px;fill:var(--bl-ink-muted);text-anchor:middle}
+.bl-stepper .bl-st-label.is-on{font-weight:600;fill:var(--bl-ink)}
+.bl-stepper .bl-st-note{font-family:var(--bl-font-heading);font-size:13px;fill:var(--bl-accent);text-anchor:middle}
+@media (prefers-reduced-motion:reduce){.bl-stepper *{transition:none!important}}
+/* code */
+.bl-code{margin:var(--bl-s3) 0;background:var(--bl-surface);border-radius:var(--bl-radius);overflow:hidden}
+.bl-code-bar{display:flex;align-items:center;justify-content:space-between;gap:var(--bl-s2);padding:0 var(--bl-s2);min-height:44px;font:13px/1.2 var(--bl-font-mono);color:var(--bl-ink-muted)}
+.bl-code pre{margin:0;padding:0 var(--bl-s2) var(--bl-s2);background:none;border-radius:0;overflow-x:auto;font:14px/1.6 var(--bl-font-mono)}
+.bl-code pre:first-child{padding-top:var(--bl-s2)}
+.bl-copy{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;padding:0;margin-left:auto;border:0;background:none;color:var(--bl-accent);font:600 13px/1 var(--bl-font-heading);cursor:pointer;flex:none}
+.bl-hl-k{color:var(--bl-accent);font-weight:600}
+.bl-hl-s{color:var(--bl-good)}
+.bl-hl-c{color:var(--bl-ink-muted);font-style:italic}
+
+</style>
+</head>
+<body>
+<header class="bl-bar"><div class="bl-col" data-bl-region="header"><a href="https://claude.ai/artifact/8Ynx2ggSTWKAmGroYKt8mj">Blaude</a><nav aria-label="Blog"><a href="https://claude.ai/artifact/8Ynx2ggSTWKAmGroYKt8mj#about">About</a></nav></div></header>
+<main class="bl-col bl-post" data-bl-region="body">
+<article>
+<h1 class="bl-title">How a post gets published</h1>
+<div class="bl-meta"><time datetime="2026-11-24">24 Nov 2026</time><span>4 min read</span><span>guide, basics</span></div>
+<div class="bl-body">
+<p>You write in Claude the way you already do. Blaude turns that draft into a page with its own link, adds it to your blog, and stays out of the way.</p>
+<p>There is no dashboard and no editor to learn. Every step below is a sentence in chat, and the only button you press yourself is Share.</p>
+<h2 id="the-five-steps">The five steps</h2>
+<p>Tap through the figure to follow one post from draft to blog.</p>
+<figure class="bl-stepper" aria-label="Publishing steps">
+<div class="bl-stepper-fig" hidden><svg aria-hidden="true"></svg></div>
+<ol class="bl-stepper-steps">
+<li data-label="Draft"><strong>Write your draft</strong> Paste it into Claude or write it there. Say &quot;turn this into a post&quot;, and ask for any figures you want.</li>
+<li data-label="Build"><strong>Claude builds the page</strong> Your text goes into your theme, with the figures you asked for. Images are resized and stored inside the page.</li>
+<li data-label="Private"><strong>Published, still private</strong> The post gets its own link and is added to your blog as a draft. Only you can see it.</li>
+<li data-label="Share" data-note="you"><strong>You press Share</strong> Open the post on claude.ai and share it publicly. This is the one step Claude cannot do for you.</li>
+<li data-label="Listed"><strong>It appears on your blog</strong> Claude moves it from drafts onto your index. Readers with your blog link can now find it.</li>
+</ol>
+<div class="bl-stepper-controls" hidden>
+<button class="bl-btn" type="button" data-step="-1" aria-label="Previous step">←</button>
+<button class="bl-btn" type="button" data-step="1">Next →</button>
+<span class="bl-stepper-count" aria-live="polite"></span>
+</div>
+
+</figure>
+<aside class="bl-callout bl-callout--tip" role="note">
+<p><strong>Your words stay yours.</strong> Blaude never rewrites your text. It adds structure, images and figures around it, and asks before changing anything else.</p>
+</aside>
+<h2 id="why-the-share-step-is-yours">Why the share step is yours</h2>
+<p>Every page starts private. Claude can build and update your pages, but only you can make them public, from the page itself on claude.ai. That keeps unfinished drafts off the internet by default.</p>
+<figure class="bl-pullquote">
+<blockquote><p>A draft is just a post you haven&#39;t shared yet.</p></blockquote>
+
+</figure>
+<p>Once a post is public, the next time Claude updates your blog it moves the post from drafts onto your index. Readers who have your blog&#39;s link see it straight away.</p>
+<h2 id="what-gets-saved">What gets saved</h2>
+<p>Your index keeps a small record of every post. You never edit it by hand, but it is what lets Claude find, update and export your posts later.</p>
+<div class="bl-code">
+<div class="bl-code-bar" hidden><span></span><button class="bl-copy" type="button">Copy</button></div>
+<pre><code data-lang="json">{
+  &quot;title&quot;: &quot;How a post gets published&quot;,
+  &quot;date&quot;: &quot;2026-11-24&quot;,
+  &quot;tags&quot;: [&quot;guide&quot;, &quot;basics&quot;],
+  &quot;status&quot;: &quot;public&quot;,
+  &quot;theme&quot;: &quot;ledger&quot;
+}</code></pre>
+</div>
+<p>That&#39;s all there is. Write, ask, share.</p>
+</div>
+</article>
+</main>
+<footer class="bl-foot"><div class="bl-col" data-bl-region="footer"><a href="https://claude.ai/artifact/8Ynx2ggSTWKAmGroYKt8mj">← All posts</a><span>Made with Blaude</span></div></footer>
+<script type="application/json" id="blaude-post">{
+  "blaude": "1.0",
+  "blogId": "demo-0001",
+  "indexUrl": "https://claude.ai/artifact/8Ynx2ggSTWKAmGroYKt8mj",
+  "title": "How a post gets published",
+  "date": "2026-11-24",
+  "description": "From a draft in chat to a public page on your blog, in five steps.",
+  "tags": [
+    "guide",
+    "basics"
+  ],
+  "theme": "featured",
+  "blaudeVersion": "1.0.0",
+  "components": [
+    "pullquote",
+    "callout",
+    "stepper",
+    "code"
+  ],
+  "related": []
+}</script>
+<script type="application/json" id="blaude-source">{
+  "markdown": "---\ntitle: How a post gets published\ndate: 2026-11-24\ndescription: From a draft in chat to a public page on your blog, in five steps.\ntags: [guide, basics]\nreadingMinutes: 4\nurl: https://claude.ai/artifact/AUuouYvrKE1t5ecSd8eRYm\npreview: true\n---\nYou write in Claude the way you already do. Blaude turns that draft into a page with its own link, adds it to your blog, and stays out of the way.\n\nThere is no dashboard and no editor to learn. Every step below is a sentence in chat, and the only button you press yourself is Share.\n\n## The five steps\n\nTap through the figure to follow one post from draft to blog.\n\n::: stepper\n{\n  \"label\": \"Publishing steps\",\n  \"steps\": [\n    { \"label\": \"Draft\", \"title\": \"Write your draft\", \"text\": \"Paste it into Claude or write it there. Say \\\"turn this into a post\\\", and ask for any figures you want.\" },\n    { \"label\": \"Build\", \"title\": \"Claude builds the page\", \"text\": \"Your text goes into your theme, with the figures you asked for. Images are resized and stored inside the page.\" },\n    { \"label\": \"Private\", \"title\": \"Published, still private\", \"text\": \"The post gets its own link and is added to your blog as a draft. Only you can see it.\" },\n    { \"label\": \"Share\", \"note\": \"you\", \"title\": \"You press Share\", \"text\": \"Open the post on claude.ai and share it publicly. This is the one step Claude cannot do for you.\" },\n    { \"label\": \"Listed\", \"title\": \"It appears on your blog\", \"text\": \"Claude moves it from drafts onto your index. Readers with your blog link can now find it.\" }\n  ]\n}\n:::\n\n::: callout tip\n**Your words stay yours.** Blaude never rewrites your text. It adds structure, images and figures around it, and asks before changing anything else.\n:::\n\n## Why the share step is yours\n\nEvery page starts private. Claude can build and update your pages, but only you can make them public, from the page itself on claude.ai. That keeps unfinished drafts off the internet by default.\n\n::: pullquote\nA draft is just a post you haven't shared yet.\n:::\n\nOnce a post is public, the next time Claude updates your blog it moves the post from drafts onto your index. Readers who have your blog's link see it straight away.\n\n## What gets saved\n\nYour index keeps a small record of every post. You never edit it by hand, but it is what lets Claude find, update and export your posts later.\n\n```json\n{\n  \"title\": \"How a post gets published\",\n  \"date\": \"2026-11-24\",\n  \"tags\": [\"guide\", \"basics\"],\n  \"status\": \"public\",\n  \"theme\": \"ledger\"\n}\n```\n\nThat's all there is. Write, ask, share.\n"
+}</script>
+<script data-bl-component="stepper">
+{
+  const NS = 'http://www.w3.org/2000/svg';
+  const el = (name, attrs, text) => {
+    const n = document.createElementNS(NS, name);
+    for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+    if (text !== undefined) n.textContent = text;
+    return n;
+  };
+  for (const root of document.querySelectorAll('.bl-stepper')) {
+    try {
+      const items = [...root.querySelectorAll('.bl-stepper-steps > li')];
+      if (!items.length) continue;
+      const steps = items.map((li) => ({ label: li.dataset.label || '', note: li.dataset.note || '' }));
+      const fig = root.querySelector('.bl-stepper-fig');
+      const svg = fig.querySelector('svg');
+      const ctr = root.querySelector('.bl-stepper-controls');
+      const prev = ctr.querySelector('[data-step="-1"]');
+      const next = ctr.querySelector('[data-step="1"]');
+      const count = ctr.querySelector('.bl-stepper-count');
+      const list = root.querySelector('.bl-stepper-steps');
+      root.classList.add('is-live');
+      fig.hidden = false;
+      ctr.hidden = false;
+      list.setAttribute('aria-live', 'polite');
+      let i = 0;
+      let parts = null;
+      let width = 0;
+
+      const build = () => {
+        const W = svg.getBoundingClientRect().width || fig.clientWidth;
+        if (!W) return;
+        width = W;
+        const n = steps.length;
+        const small = W < 420;
+        const r = small ? 15 : 20;
+        const pad = r * 1.25 + 4;
+        const hasNote = steps.some((s) => s.note);
+        const cy = r * 1.25 + 4 + (hasNote ? 20 : 0);
+        const H = cy + r + 34;
+        const gap = n > 1 ? (W - 2 * pad) / (n - 1) : 0;
+        svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+        svg.setAttribute('height', H);
+        svg.replaceChildren();
+        const len = Math.max(0, W - 2 * pad);
+        svg.append(el('line', { class: 'bl-st-track', x1: pad, y1: cy, x2: W - pad, y2: cy }));
+        const progress = el('line', { class: 'bl-st-progress', x1: pad, y1: cy, x2: W - pad, y2: cy, 'stroke-dasharray': `${len} ${len}` });
+        svg.append(progress);
+        const dots = [];
+        const nums = [];
+        const labels = [];
+        steps.forEach((s, j) => {
+          const x = n > 1 ? pad + gap * j : W / 2;
+          dots.push(svg.appendChild(el('circle', { class: 'bl-st-dot', cx: x, cy, r })));
+          nums.push(svg.appendChild(el('text', { class: 'bl-st-num', x, y: cy, 'font-size': small ? 13 : 14 }, String(j + 1))));
+          labels.push(svg.appendChild(el('text', { class: 'bl-st-label', x, y: cy + r + 24, 'data-x': x }, s.label)));
+          if (s.note) svg.append(el('text', { class: 'bl-st-note', x, y: cy - r * 1.25 - 8 }, s.note));
+        });
+        // Long labels that would collide: show only the current one.
+        const crowded = labels.some((t) => t.getComputedTextLength() > gap - 6) && n > 1;
+        parts = { progress, dots, nums, labels, len, gap, crowded };
+        paint();
+      };
+
+      const paint = () => {
+        if (!parts) return;
+        const { progress, dots, nums, labels, len, gap, crowded } = parts;
+        const n = steps.length;
+        progress.setAttribute('stroke-dashoffset', String(n > 1 ? len - gap * i : len));
+        dots.forEach((d, j) => {
+          d.classList.toggle('is-done', j <= i);
+          d.classList.toggle('is-on', j === i);
+          nums[j].classList.toggle('is-done', j <= i);
+          labels[j].classList.toggle('is-on', j === i);
+          labels[j].style.display = crowded && j !== i ? 'none' : '';
+        });
+        // Keep the current label inside the figure.
+        const t = labels[i];
+        const x = Number(t.dataset.x);
+        const half = t.getComputedTextLength() / 2;
+        const W = width;
+        if (x - half < 0) { t.setAttribute('x', 0); t.style.textAnchor = 'start'; }
+        else if (x + half > W) { t.setAttribute('x', W); t.style.textAnchor = 'end'; }
+        labels.forEach((l) => { if (l !== t) { l.setAttribute('x', l.dataset.x); l.style.textAnchor = ''; } });
+      };
+
+      const show = () => {
+        items.forEach((li, j) => li.setAttribute('aria-hidden', String(j !== i)));
+        count.textContent = `Step ${i + 1} of ${steps.length}`;
+        prev.disabled = i === 0;
+        next.disabled = i === steps.length - 1;
+        paint();
+      };
+      prev.addEventListener('click', () => { if (i > 0) { i--; show(); } });
+      next.addEventListener('click', () => { if (i < steps.length - 1) { i++; show(); } });
+      root.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight') { e.preventDefault(); next.click(); }
+        if (e.key === 'ArrowLeft') { e.preventDefault(); prev.click(); }
+      });
+      // Swipe on touch
+      let x0 = null;
+      fig.addEventListener('pointerdown', (e) => { x0 = e.clientX; });
+      fig.addEventListener('pointerup', (e) => {
+        if (x0 === null) return;
+        const dx = e.clientX - x0;
+        x0 = null;
+        if (Math.abs(dx) > 40) (dx < 0 ? next : prev).click();
+      });
+      new ResizeObserver(() => {
+        const W = svg.getBoundingClientRect().width;
+        if (Math.abs(W - width) > 0.5) build();
+      }).observe(fig);
+      build();
+      show();
+    } catch (e) {
+      console.error('blaude stepper', e);
+    }
+  }
+}
+</script>
+<script data-bl-component="code">
+{
+  const esc = (s) => s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  const kw = (w) => new RegExp(`\\b(?:${w.split(' ').join('|')})\\b`);
+  const STR = /(["'`])(?:\\[\s\S]|(?!\1)[^\\\n])*\1/;
+  const RULES = {
+    js: [[/\/\/[^\n]*|\/\*[\s\S]*?\*\//, 'c'], [STR, 's'], [kw('const let var function return if else for while do break continue new class extends import export from default async await try catch finally throw typeof instanceof in of this null undefined true false switch case yield'), 'k']],
+    py: [[/#[^\n]*/, 'c'], [/"""[\s\S]*?"""|'''[\s\S]*?'''/, 's'], [STR, 's'], [kw('def return if elif else for while in not and or import from as class with try except finally raise lambda None True False pass yield async await is global nonlocal'), 'k']],
+    sh: [[/(?:^|(?<=\s))#[^\n]*/, 'c'], [STR, 's'], [/^\s*(?:\$\s*)?[\w./-]+/m, 'k']],
+    json: [[/"(?:\\.|[^"\\\n])*"(?=\s*:)/, 'k'], [/"(?:\\.|[^"\\\n])*"/, 's'], [/\b(?:true|false|null)\b/, 'k']],
+    css: [[/\/\*[\s\S]*?\*\//, 'c'], [STR, 's'], [/[\w-]+(?=\s*:[^:])/, 'k']],
+    html: [[/<!--[\s\S]*?-->/, 'c'], [/"[^"\n]*"|'[^'\n]*'/, 's'], [/<\/?[\w-]+|\/?>/, 'k']],
+    http: [[/<!--[\s\S]*?-->/, 'c'], [/^#[^\n]*/m, 'c'], [/^(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\b|(?<=^HTTP\/[\d.]+ )\d{3}[^\n]*|^[\w-]+:/m, 'k'], [/(?<=^[\w-]+:[ \t]?)[^\n]+/m, 's']],
+  };
+  const ALIAS = { javascript: 'js', ts: 'js', typescript: 'js', jsx: 'js', tsx: 'js', mjs: 'js', python: 'py', bash: 'sh', shell: 'sh', zsh: 'sh', console: 'sh', xml: 'html', svg: 'html', yaml: 'py', yml: 'py', toml: 'py' };
+  const highlight = (text, lang) => {
+    const rules = RULES[ALIAS[lang] || lang];
+    if (!rules) return esc(text);
+    const res = rules.map(([re, cls]) => [new RegExp(re.source, re.flags.replace('g', '') + 'g'), cls]);
+    let out = '';
+    let i = 0;
+    while (i < text.length) {
+      let best = null;
+      for (const [re, cls] of res) {
+        re.lastIndex = i;
+        const m = re.exec(text);
+        if (m && m[0] && (!best || m.index < best.index)) best = { index: m.index, text: m[0], cls };
+      }
+      if (!best) { out += esc(text.slice(i)); break; }
+      out += esc(text.slice(i, best.index)) + `<span class="bl-hl-${best.cls}">${esc(best.text)}</span>`;
+      i = best.index + best.text.length;
+    }
+    return out;
+  };
+  const copy = async (btn, text) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      btn.textContent = 'Copied';
+    } catch (_) {
+      btn.textContent = 'Select to copy';
+    }
+    setTimeout(() => { btn.textContent = 'Copy'; }, 1600);
+  };
+  for (const root of document.querySelectorAll('.bl-code')) {
+    try {
+      const code = root.querySelector('code');
+      const raw = code.textContent;
+      code.innerHTML = highlight(raw, (code.dataset.lang || '').toLowerCase());
+      const bar = root.querySelector('.bl-code-bar');
+      bar.hidden = false;
+      bar.querySelector('.bl-copy').addEventListener('click', (e) => copy(e.currentTarget, raw));
+    } catch (e) {
+      console.error('blaude code', e);
+    }
+  }
+}
+</script>
+</body>
+</html>

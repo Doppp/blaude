@@ -66,6 +66,8 @@ function checkPage(html, { name = 'page' } = {}) {
   for (const m of scan.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/gi)) checkCss(m[1], 'inline <style>', errors);
   for (const m of scan.matchAll(/\sstyle\s*=\s*("([^"]*)"|'([^']*)')/gi)) checkCss(m[2] ?? m[3], 'style attribute', errors);
   const inlineJs = [...scan.matchAll(/<script\b(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi)].map((m) => m[1]).join('\n');
+  // Markup that scripts build at run time is covered by the render check (it blocks real requests).
+  scan = scan.replace(/(<script\b(?![^>]*\bsrc=)[^>]*>)[\s\S]*?(<\/script>)/gi, '$1$2');
 
   // Tags that load things
   for (const m of scan.matchAll(/<(script|link|img|source|video|audio|track|iframe|frame|object|embed|image|use|input|base|meta)\b[^>]*>/gi)) {

@@ -1,0 +1,13 @@
+{
+  "name": "featured",
+  "displayName": "Featured",
+  "author": "Blaude",
+  "description": "Your latest post shown large with a cover, older posts below. For writers who post less often.",
+  "fonts": [
+    "Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;1,7..72,400",
+    "Instrument Sans:wght@400;600",
+    "JetBrains Mono:wght@400;600"
+  ],
+  "blaude": "1.0",
+  "indexLayout": "featured"
+}
