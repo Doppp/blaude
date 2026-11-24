@@ -11,6 +11,8 @@ const TOKEN_VALUE = /^[^;{}<>\\]*$/;
 
 const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const isStr = (v) => typeof v === 'string';
+// A relative path, as in an exported blog (../index.html, my-post/index.html).
+const isRelative = (u) => isStr(u) && /^(\.{1,2}\/|[a-z0-9])[\w\-./#]*$/i.test(u) && !/^[a-z][a-z0-9+.-]*:/i.test(u);
 const safeUrl = (u) => isStr(u) && (u === '' || /^(https?:|mailto:|#|\.{0,2}\/)/i.test(u.trim()));
 
 function validateTokens(tokens, where, errs) {
@@ -88,7 +90,7 @@ function validateConfig(cfg) {
       if (!isStr(p.date) || !DATE.test(p.date)) errs.push(`${at}.date must be YYYY-MM-DD`);
       if (p.updated !== undefined && !(isStr(p.updated) && DATE.test(p.updated))) errs.push(`${at}.updated must be YYYY-MM-DD`);
       if (!['draft', 'public'].includes(p.status)) errs.push(`${at}.status must be draft or public`);
-      if (!isStr(p.url) || !/^https:\/\//.test(p.url)) errs.push(`${at}.url must be the post's https artifact link`);
+      if (!isStr(p.url) || !(/^https:\/\//.test(p.url) || isRelative(p.url))) errs.push(`${at}.url must be the post's https artifact link`);
       else if (urls.has(p.url)) errs.push(`${at}.url is listed twice`);
       else urls.add(p.url);
       if (p.tags !== undefined && !(Array.isArray(p.tags) && p.tags.every(isStr))) errs.push(`${at}.tags must be a list of strings`);
@@ -103,7 +105,7 @@ function validatePostMeta(m) {
   if (!isObj(m)) return ['post metadata must be an object'];
   if (!isStr(m.blaude) || !/^1\./.test(m.blaude)) errs.push('"blaude" must be a 1.x version string');
   if (!isStr(m.blogId) || !m.blogId) errs.push('"blogId" is required');
-  if (!isStr(m.indexUrl) || !/^https:\/\//.test(m.indexUrl)) errs.push('"indexUrl" must be the index artifact link');
+  if (!isStr(m.indexUrl) || !(/^https:\/\//.test(m.indexUrl) || isRelative(m.indexUrl))) errs.push('"indexUrl" must be the index artifact link');
   if (!isStr(m.title) || !m.title.trim()) errs.push('"title" is required');
   if (!isStr(m.date) || !DATE.test(m.date)) errs.push('"date" must be YYYY-MM-DD');
   if (m.tags !== undefined && !(Array.isArray(m.tags) && m.tags.every(isStr))) errs.push('"tags" must be a list of strings');

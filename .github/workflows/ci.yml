@@ -29,6 +29,8 @@ jobs:
         run: node tools/check-artifact.js
       - name: check-theme
         run: node tools/check-theme.js
+      - name: export
+        run: node tools/test-export.js
       - name: Upload screenshots
         if: always()
         uses: actions/upload-artifact@v4

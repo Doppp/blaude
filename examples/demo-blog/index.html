@@ -249,7 +249,11 @@ a.bl-row:hover .bl-t{color:var(--bl-accent)}
   // Renders the whole page from #blaude-config. Every value is text: escaped or set with textContent.
   const cfg = JSON.parse(document.getElementById('blaude-config').textContent);
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const safeUrl = (u) => (/^(https?:|mailto:|#)/i.test(String(u || '').trim()) ? String(u).trim() : '');
+  // http(s), mailto, #anchors, or a relative path (an exported blog); never javascript: or other schemes.
+  const safeUrl = (u) => {
+    const s = String(u || '').trim();
+    return /^(https?:|mailto:|#)/i.test(s) || (s && !/^[a-z][a-z0-9+.-]*:/i.test(s) && !s.startsWith('//')) ? s : '';
+  };
   const M = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const short = (d) => (/^\d{4}-\d{2}-\d{2}/.test(d || '') ? `${M[Number(d.slice(5, 7)) - 1]} ${Number(d.slice(8, 10))}` : '');
   // Markdown for the bio: escaped first, then paragraphs, **bold**, *italic*, `code` and [links](https://...).
