@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="{{lang}}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>{{blogName}}</title>
+<meta name="description" content="{{description}}">
+<meta property="og:type" content="website">
+<meta property="og:title" content="{{blogName}}">
+<meta property="og:description" content="{{description}}">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="{{fontsHref}}">
+<style>
+{{{tokensCss}}}
+{{{baseCss}}}
+/* Ledger index: a contents page, posts grouped by year */
+.bl-ix-head{padding-top:var(--bl-s4)}
+.bl-ix-name{font:600 22px/1.2 var(--bl-font-heading);margin:0}
+.bl-ix-intro{font-size:18px;line-height:1.55;margin:var(--bl-s1) 0 0}
+.bl-ix-nav{display:flex;flex-wrap:wrap;gap:0 var(--bl-s3);margin-top:var(--bl-s1);font:15px/1.2 var(--bl-font-heading)}
+.bl-ix-nav a{display:inline-flex;align-items:center;min-height:44px;min-width:44px;color:var(--bl-ink-muted);text-decoration:none}
+.bl-ix-nav a:hover{color:var(--bl-ink)}
+.bl-ix-sec{margin-top:var(--bl-s3);padding-top:var(--bl-s3);border-top:1px solid var(--bl-rule)}
+.bl-ix-headrow{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:0 var(--bl-s2)}
+.bl-ix-sec h2{font:600 15px/1.3 var(--bl-font-heading);margin:0}
+.bl-filter{display:flex;flex-wrap:wrap;gap:0;font:14px/1.2 var(--bl-font-heading);color:var(--bl-ink-muted)}
+.bl-filter button{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;padding:0 var(--bl-s1);border:0;background:none;font:inherit;color:inherit;cursor:pointer}
+.bl-filter button[aria-pressed=true]{color:var(--bl-ink);text-decoration:underline;text-decoration-color:var(--bl-accent);text-decoration-thickness:2px;text-underline-offset:4px}
+.bl-yr{font:600 13px/1 var(--bl-font-mono);color:var(--bl-ink-muted);margin:var(--bl-s2) 0 0}
+.bl-rows{list-style:none;margin:0;padding:0}
+.bl-row{display:grid;grid-template-columns:3.6em minmax(0,1fr);gap:0 var(--bl-s2);align-items:baseline;align-content:center;min-height:44px;padding-block:var(--bl-s1);color:inherit;text-decoration:none}
+.bl-row--plain{grid-template-columns:minmax(0,1fr)}
+a.bl-row:hover .bl-t{color:var(--bl-accent)}
+.bl-d{font:13.5px/1.4 var(--bl-font-mono);color:var(--bl-ink-muted);white-space:nowrap}
+.bl-t{font:17px/1.4 var(--bl-font-heading)}
+.bl-n{display:block;font:14px/1.4 var(--bl-font-heading);color:var(--bl-ink-muted)}
+.bl-empty{margin:var(--bl-s2) 0 0;color:var(--bl-ink-muted);font-style:italic}
+.bl-ix-about p{margin:var(--bl-s1) 0 0}
+.bl-ix-about code{font:.88em var(--bl-font-mono)}
+.bl-links{display:flex;flex-wrap:wrap;gap:0 var(--bl-s3);margin-top:var(--bl-s1);font:15px/1.2 var(--bl-font-heading)}
+.bl-links a{display:inline-flex;align-items:center;min-height:44px;min-width:44px;text-decoration:none}
+.bl-ix-foot{font-size:14px}
+.bl-mail{display:flex;flex-wrap:wrap;align-items:center;gap:0 var(--bl-s2)}
+{{{overridesCss}}}
+</style>
+</head>
+<body>
+<div class="bl-col">
+<header class="bl-ix-head" data-bl-region="header">
+<h1 class="bl-ix-name" id="bl-name">{{blogName}}</h1>
+<p class="bl-ix-intro" id="bl-intro"{{^tagline}} hidden{{/tagline}}>{{tagline}}</p>
+<nav class="bl-ix-nav" id="bl-nav" aria-label="Sections"></nav>
+</header>
+<main id="bl-sections" data-bl-region="body"></main>
+</div>
+<footer class="bl-foot bl-ix-foot"><div class="bl-col" data-bl-region="footer"><span class="bl-mail" id="bl-mail"></span><span>Made with Blaude</span></div></footer>
+<script type="application/json" id="blaude-config">{{{configJson}}}</script>
+<script>
+{
+  // Renders the whole page from #blaude-config. Every value is text: escaped or set with textContent.
+  const cfg = JSON.parse(document.getElementById('blaude-config').textContent);
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const safeUrl = (u) => (/^(https?:|mailto:|#)/i.test(String(u || '').trim()) ? String(u).trim() : '');
+  const M = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const short = (d) => (/^\d{4}-\d{2}-\d{2}/.test(d || '') ? `${M[Number(d.slice(5, 7)) - 1]} ${Number(d.slice(8, 10))}` : '');
+  // Markdown for the bio: escaped first, then paragraphs, **bold**, *italic*, `code` and [links](https://...).
+  const md = (src) => String(src || '').trim().split(/\n\s*\n/).map((p) => '<p>' + esc(p)
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/(^|[^*\w])\*([^*\s][^*]*?)\*(?!\*)/g, '$1<em>$2</em>')
+    .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (all, t, u) => {
+      const h = safeUrl(u.replace(/&amp;/g, '&'));
+      return h ? `<a href="${esc(h)}">${t}</a>` : t;
+    })
+    .replace(/\n/g, '<br>') + '</p>').join('');
+  const b = cfg.blog || {};
+  const sections = (cfg.sections || []).map((s) => ({ ...s, id: s.id || s.type }));
+  const pub = (cfg.posts || []).filter((p) => p.status === 'public' && p.title && p.date).sort((x, y) => y.date.localeCompare(x.date));
+  const tags = [...new Set(pub.flatMap((p) => p.tags || []))].sort((x, y) => x.localeCompare(y));
+  let tag = null;
+
+  const row = (href, date, title, note, dated = true) => {
+    const inner = `${dated ? `<span class="bl-d">${esc(short(date))}</span>` : ''}<span class="bl-t">${esc(title)}${note ? `<span class="bl-n">${esc(note)}</span>` : ''}</span>`;
+    const cls = `bl-row${dated ? '' : ' bl-row--plain'}`;
+    const h = safeUrl(href);
+    return `<li>${h ? `<a class="${cls}" href="${esc(h)}">${inner}</a>` : `<div class="${cls}">${inner}</div>`}</li>`;
+  };
+  const byYear = (items, rowOf) => {
+    const years = [...new Set(items.map((x) => (x.date || '').slice(0, 4)))];
+    return years.map((y) => `${y ? `<div class="bl-yr">${esc(y)}</div>` : ''}<ul class="bl-rows">${items.filter((x) => (x.date || '').slice(0, 4) === y).map(rowOf).join('')}</ul>`).join('');
+  };
+  const render = {
+    posts: (s) => `<section class="bl-ix-sec" id="${esc(s.id)}" aria-labelledby="${esc(s.id)}-h"><div class="bl-ix-headrow"><h2 id="${esc(s.id)}-h">${esc(s.title)}</h2>${tags.length > 1 ? `<div class="bl-filter" role="group" aria-label="Filter by tag">${['all', ...tags].map((t) => `<button type="button" data-tag="${esc(t)}">${esc(t)}</button>`).join('')}</div>` : ''}</div><div class="bl-ledger"></div></section>`,
+    about: (s) => `<section class="bl-ix-sec bl-ix-about" id="${esc(s.id)}" aria-labelledby="${esc(s.id)}-h"><h2 id="${esc(s.id)}-h">${esc(s.title)}</h2>${b.bio ? md(b.bio) : '<p class="bl-empty">Tell Claude about yourself to fill this in.</p>'}${(b.links || []).length ? `<div class="bl-links">${b.links.map((l) => (safeUrl(l.url) ? `<a href="${esc(safeUrl(l.url))}">${esc(l.label)}</a>` : '')).join('')}</div>` : ''}</section>`,
+    list: (s) => {
+      const items = [...(s.items || [])].sort((x, y) => String(y.date || '').localeCompare(String(x.date || '')));
+      return `<section class="bl-ix-sec" id="${esc(s.id)}" aria-labelledby="${esc(s.id)}-h"><h2 id="${esc(s.id)}-h">${esc(s.title)}</h2>${items.length ? byYear(items, (it) => row(it.url, it.date, it.title, it.note)) : ''}</section>`;
+    },
+    projects: (s) => `<section class="bl-ix-sec" id="${esc(s.id)}" aria-labelledby="${esc(s.id)}-h"><h2 id="${esc(s.id)}-h">${esc(s.title)}</h2><ul class="bl-rows">${(s.items || []).map((it) => row(it.url, '', it.name, it.description, false)).join('')}</ul></section>`,
+    featured: (s) => `<section class="bl-ix-sec" id="${esc(s.id)}" aria-labelledby="${esc(s.id)}-h"><h2 id="${esc(s.id)}-h">${esc(s.title)}</h2><ul class="bl-rows">${(s.items || []).map((it) => row(it.url, '', it.title, it.note, false)).join('')}</ul></section>`,
+  };
+
+  document.getElementById('bl-name').textContent = b.name || '';
+  document.title = b.name || '';
+  const intro = document.getElementById('bl-intro');
+  intro.textContent = b.tagline || '';
+  intro.hidden = !b.tagline;
+  const shown = sections.filter((s) => render[s.type]);
+  document.getElementById('bl-sections').innerHTML = shown.map((s) => render[s.type](s)).join('');
+  document.getElementById('bl-nav').innerHTML = shown.map((s) => `<a href="#${esc(s.id)}">${esc(s.title)}</a>`).join('');
+
+  const draw = () => {
+    const box = document.querySelector('.bl-ledger');
+    if (!box) return;
+    const list = tag ? pub.filter((p) => (p.tags || []).includes(tag)) : pub;
+    box.innerHTML = list.length ? byYear(list, (p) => row(p.url, p.date, p.title, '')) : '<p class="bl-empty">No posts yet.</p>';
+    document.querySelectorAll('.bl-filter button').forEach((x) => x.setAttribute('aria-pressed', String((x.dataset.tag === 'all' && !tag) || x.dataset.tag === tag)));
+  };
+  const fromHash = () => {
+    const m = decodeURIComponent(location.hash || '').match(/^#tag-(.+)$/);
+    tag = m && tags.includes(m[1]) ? m[1] : null;
+    draw();
+  };
+  document.querySelectorAll('.bl-filter button').forEach((x) => x.addEventListener('click', () => {
+    tag = x.dataset.tag === 'all' ? null : x.dataset.tag;
+    try {
+      history.replaceState(null, '', tag ? `#tag-${encodeURIComponent(tag)}` : location.pathname + location.search);
+    } catch (_) { /* the URL is a convenience */ }
+    draw();
+  }));
+  window.addEventListener('hashchange', fromHash);
+  fromHash();
+
+  if (b.email) {
+    const m = document.getElementById('bl-mail');
+    const t = document.createElement('span');
+    t.textContent = b.email;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'bl-textbtn';
+    btn.textContent = 'Copy';
+    btn.setAttribute('aria-label', 'Copy email address');
+    btn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(b.email);
+        btn.textContent = 'Copied';
+      } catch (_) {
+        btn.textContent = 'Select to copy';
+      }
+      setTimeout(() => { btn.textContent = 'Copy'; }, 1600);
+    });
+    m.append(t, btn);
+  }
+  if (location.hash && !/^#tag-/.test(location.hash)) {
+    const target = document.getElementById(decodeURIComponent(location.hash.slice(1)));
+    if (target) target.scrollIntoView();
+  }
+}
+</script>
+</body>
+</html>

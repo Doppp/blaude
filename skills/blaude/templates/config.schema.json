@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Doppp/blaude/skills/blaude/templates/config.schema.json",
+  "title": "Blaude index config (blaude-config), v1",
+  "type": "object",
+  "required": ["blaude", "blogId", "blog", "theme", "sections", "posts"],
+  "properties": {
+    "blaude": { "type": "string", "pattern": "^1\\." },
+    "blogId": { "type": "string", "minLength": 1, "description": "UUID generated at setup. Never changes." },
+    "lang": { "type": "string", "description": "Page language, default en" },
+    "blog": {
+      "type": "object",
+      "required": ["name", "author"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "tagline": { "type": "string", "description": "In Ledger, the one-paragraph intro under the name" },
+        "author": { "type": "string" },
+        "bio": { "type": "string", "description": "Markdown: paragraphs, **bold**, *italic*, `code`, [links](https://...)" },
+        "email": { "type": "string" },
+        "links": { "type": "array", "items": { "type": "object", "required": ["label", "url"], "properties": { "label": { "type": "string" }, "url": { "type": "string", "pattern": "^(https?:|mailto:|#)" } } } },
+        "avatar": { "type": "string", "pattern": "^data:image/" }
+      }
+    },
+    "theme": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": { "enum": ["ledger", "featured", "custom"] },
+        "layout": { "enum": ["ledger", "featured"], "description": "Index layout for a custom theme" },
+        "fonts": { "type": "array", "items": { "type": "string" }, "description": "Google Fonts family specs for a custom theme" },
+        "tokens": { "type": "object", "description": "Full token set for custom; overrides otherwise", "patternProperties": { "^--bl-[a-z0-9-]+$": { "type": "string", "pattern": "^[^;{}<>\\\\]*$" } }, "additionalProperties": false }
+      }
+    },
+    "sections": {
+      "type": "array",
+      "description": "Display order. Must include one posts section.",
+      "items": {
+        "type": "object",
+        "required": ["type", "title"],
+        "properties": {
+          "type": { "enum": ["posts", "about", "list", "projects", "featured"] },
+          "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$", "description": "Anchor (#id). Defaults to the type for posts, about and featured; required for list and projects" },
+          "title": { "type": "string" },
+          "items": { "type": "array", "description": "list: {date, title, url, note}; projects: {name, url, description}; featured: {title, url, note}" }
+        }
+      }
+    },
+    "posts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["url", "title", "date", "status"],
+        "properties": {
+          "slug": { "type": "string", "description": "The artifact id from the URL" },
+          "url": { "type": "string", "pattern": "^https://" },
+          "title": { "type": "string" },
+          "date": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+          "updated": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+          "description": { "type": "string" },
+          "tags": { "type": "array", "items": { "type": "string" } },
+          "status": { "enum": ["draft", "public"], "description": "Only public posts appear on the index" },
+          "readingMinutes": { "type": "integer", "minimum": 1 },
+          "blaudeVersion": { "type": "string" },
+          "theme": { "type": "string" }
+        }
+      }
+    }
+  }
+}

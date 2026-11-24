@@ -48,6 +48,7 @@ function validateConfig(cfg) {
   if (!isObj(t) || !THEMES.includes(t.name)) errs.push(`theme.name must be one of ${THEMES.join(', ')}`);
   else {
     validateTokens(t.tokens, 'theme.tokens', errs);
+    if (t.fonts !== undefined && !(Array.isArray(t.fonts) && t.fonts.every((f) => isStr(f) && /^[A-Za-z0-9 ]+(:[A-Za-z0-9,.;@]+)?$/.test(f)))) errs.push('theme.fonts must be Google Fonts family specs');
     if (t.name === 'custom' && t.layout !== undefined && !['ledger', 'featured'].includes(t.layout)) errs.push('theme.layout must be ledger or featured');
   }
 
