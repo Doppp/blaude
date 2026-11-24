@@ -1,0 +1,106 @@
+<!-- blaude component: codetabs. Several files in tabs. One Copy button in the tab bar copies the visible file. -->
+<style data-bl-component="codetabs">
+.bl-codetabs{margin:var(--bl-s3) 0;border:1px solid var(--bl-rule);border-radius:var(--bl-radius);overflow:hidden}
+.bl-tabbar{display:flex;align-items:center;gap:0;padding:0 var(--bl-s1);background:var(--bl-surface);border-bottom:1px solid var(--bl-rule);overflow-x:auto}
+.bl-tabbar [role=tab]{min-height:44px;min-width:44px;padding:0 var(--bl-s2);border:0;border-bottom:2px solid transparent;background:none;color:var(--bl-ink-muted);font:600 14px/1 var(--bl-font-mono);cursor:pointer;flex:none}
+.bl-tabbar [role=tab][aria-selected=true]{color:var(--bl-ink);border-bottom-color:var(--bl-accent)}
+.bl-tabbar .bl-copy{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;padding:0 var(--bl-s1);margin-left:auto;border:0;background:none;color:var(--bl-accent);font:600 13px/1 var(--bl-font-heading);cursor:pointer;flex:none}
+.bl-tabname{padding:var(--bl-s1) var(--bl-s2) 0;font:600 14px/1.4 var(--bl-font-mono);color:var(--bl-ink-muted)}
+.bl-codetabs pre{margin:0;padding:var(--bl-s2);background:none;border-radius:0;overflow-x:auto;font:14px/1.65 var(--bl-font-mono)}
+.bl-codetabs .bl-hl-k{color:var(--bl-accent);font-weight:600}
+.bl-codetabs .bl-hl-s{color:var(--bl-good)}
+.bl-codetabs .bl-hl-c{color:var(--bl-ink-muted);font-style:italic}
+</style>
+<template data-bl-markup>
+<div class="bl-codetabs" id="{{id}}">
+<div class="bl-tabbar" role="tablist" aria-label="{{label}}" hidden>
+{{#files}}<button role="tab" type="button" id="{{id}}-tab-{{@index}}" aria-controls="{{id}}-panel-{{@index}}" aria-selected="{{#@first}}true{{/@first}}{{^@first}}false{{/@first}}" tabindex="{{#@first}}0{{/@first}}{{^@first}}-1{{/@first}}">{{name}}</button>{{/files}}
+<button class="bl-copy" type="button">Copy</button>
+</div>
+{{#files}}<div class="bl-tabpanel" role="tabpanel" id="{{id}}-panel-{{@index}}" aria-labelledby="{{id}}-tab-{{@index}}">
+<div class="bl-tabname">{{name}}</div>
+<pre><code data-lang="{{lang}}">{{code}}</code></pre>
+</div>
+{{/files}}
+</div>
+</template>
+<script data-bl-component="codetabs">
+{
+  const esc = (s) => s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  const kw = (w) => new RegExp(`\\b(?:${w.split(' ').join('|')})\\b`);
+  const STR = /(["'`])(?:\\[\s\S]|(?!\1)[^\\\n])*\1/;
+  const RULES = {
+    js: [[/\/\/[^\n]*|\/\*[\s\S]*?\*\//, 'c'], [STR, 's'], [kw('const let var function return if else for while do break continue new class extends import export from default async await try catch finally throw typeof instanceof in of this null undefined true false switch case yield'), 'k']],
+    py: [[/#[^\n]*/, 'c'], [/"""[\s\S]*?"""|'''[\s\S]*?'''/, 's'], [STR, 's'], [kw('def return if elif else for while in not and or import from as class with try except finally raise lambda None True False pass yield async await is global nonlocal'), 'k']],
+    sh: [[/(?:^|(?<=\s))#[^\n]*/, 'c'], [STR, 's'], [/^\s*(?:\$\s*)?[\w./-]+/m, 'k']],
+    json: [[/"(?:\\.|[^"\\\n])*"(?=\s*:)/, 'k'], [/"(?:\\.|[^"\\\n])*"/, 's'], [/\b(?:true|false|null)\b/, 'k']],
+    css: [[/\/\*[\s\S]*?\*\//, 'c'], [STR, 's'], [/[\w-]+(?=\s*:[^:])/, 'k']],
+    html: [[/<!--[\s\S]*?-->/, 'c'], [/"[^"\n]*"|'[^'\n]*'/, 's'], [/<\/?[\w-]+|\/?>/, 'k']],
+    http: [[/<!--[\s\S]*?-->/, 'c'], [/^#[^\n]*/m, 'c'], [/^(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\b|(?<=^HTTP\/[\d.]+ )\d{3}[^\n]*|^[\w-]+:/m, 'k'], [/(?<=^[\w-]+:[ \t]?)[^\n]+/m, 's']],
+  };
+  const ALIAS = { javascript: 'js', ts: 'js', typescript: 'js', jsx: 'js', tsx: 'js', mjs: 'js', python: 'py', bash: 'sh', shell: 'sh', zsh: 'sh', console: 'sh', xml: 'html', svg: 'html', yaml: 'py', yml: 'py', toml: 'py' };
+  const highlight = (text, lang) => {
+    const rules = RULES[ALIAS[lang] || lang];
+    if (!rules) return esc(text);
+    const res = rules.map(([re, cls]) => [new RegExp(re.source, re.flags.replace('g', '') + 'g'), cls]);
+    let out = '';
+    let i = 0;
+    while (i < text.length) {
+      let best = null;
+      for (const [re, cls] of res) {
+        re.lastIndex = i;
+        const m = re.exec(text);
+        if (m && m[0] && (!best || m.index < best.index)) best = { index: m.index, text: m[0], cls };
+      }
+      if (!best) { out += esc(text.slice(i)); break; }
+      out += esc(text.slice(i, best.index)) + `<span class="bl-hl-${best.cls}">${esc(best.text)}</span>`;
+      i = best.index + best.text.length;
+    }
+    return out;
+  };
+  for (const root of document.querySelectorAll('.bl-codetabs')) {
+    try {
+      const tabs = [...root.querySelectorAll('[role=tab]')];
+      const panels = [...root.querySelectorAll('[role=tabpanel]')];
+      const raw = panels.map((p) => {
+        const code = p.querySelector('code');
+        const text = code.textContent;
+        code.innerHTML = highlight(text, (code.dataset.lang || '').toLowerCase());
+        p.querySelector('.bl-tabname').hidden = true;
+        return text;
+      });
+      let cur = Math.max(0, tabs.findIndex((t) => t.getAttribute('aria-selected') === 'true'));
+      const select = (n, focus) => {
+        cur = (n + tabs.length) % tabs.length;
+        tabs.forEach((t, j) => {
+          t.setAttribute('aria-selected', String(j === cur));
+          t.tabIndex = j === cur ? 0 : -1;
+        });
+        panels.forEach((p, j) => { p.hidden = j !== cur; });
+        if (focus) tabs[cur].focus();
+      };
+      tabs.forEach((t, j) => {
+        t.addEventListener('click', () => select(j));
+        t.addEventListener('keydown', (e) => {
+          if (e.key === 'ArrowRight') { e.preventDefault(); select(cur + 1, true); }
+          if (e.key === 'ArrowLeft') { e.preventDefault(); select(cur - 1, true); }
+        });
+      });
+      const btn = root.querySelector('.bl-copy');
+      btn.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(raw[cur]);
+          btn.textContent = 'Copied';
+        } catch (_) {
+          btn.textContent = 'Select to copy';
+        }
+        setTimeout(() => { btn.textContent = 'Copy'; }, 1600);
+      });
+      root.querySelector('[role=tablist]').hidden = false;
+      select(cur);
+    } catch (e) {
+      console.error('blaude codetabs', e);
+    }
+  }
+}
+</script>

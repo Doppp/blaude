@@ -1,0 +1,161 @@
+<!-- blaude component: stepper. A figure that changes as the reader taps through steps.
+     Buttons and arrow keys; without JS it is a plain numbered list. -->
+<style data-bl-component="stepper">
+.bl-stepper{margin:var(--bl-s4) 0;padding:var(--bl-s3) 0;border-top:1px solid var(--bl-rule);border-bottom:1px solid var(--bl-rule)}
+.bl-stepper-fig svg{display:block;width:100%;overflow:visible}
+.bl-stepper-steps{margin:0;padding-left:var(--bl-s3);font:16px/1.5 var(--bl-font-heading)}
+.bl-stepper-steps li+li{margin-top:var(--bl-s1)}
+.bl-stepper-steps strong{font-size:18px}
+.bl-stepper.is-live .bl-stepper-steps{display:grid;list-style:none;padding:0;margin:var(--bl-s2) 0 var(--bl-s1)}
+.bl-stepper.is-live .bl-stepper-steps li{grid-area:1/1;margin:0}
+.bl-stepper.is-live .bl-stepper-steps li[aria-hidden=true]{visibility:hidden}
+.bl-stepper.is-live .bl-stepper-steps strong{display:block}
+.bl-stepper-controls{display:flex;align-items:center;gap:var(--bl-s1);font:14px/1.2 var(--bl-font-heading)}
+.bl-stepper-count{margin-left:auto;color:var(--bl-ink-muted)}
+.bl-stepper figcaption{margin-top:var(--bl-s2);font:14px/1.5 var(--bl-font-heading);color:var(--bl-ink-muted)}
+.bl-stepper .bl-st-track{stroke:var(--bl-rule);stroke-width:3}
+.bl-stepper .bl-st-progress{stroke:var(--bl-accent);stroke-width:3;transition:stroke-dashoffset .35s ease}
+.bl-stepper .bl-st-dot{fill:var(--bl-bg);stroke:var(--bl-rule);stroke-width:2;transform-box:fill-box;transform-origin:center;transition:fill .35s,stroke .35s,transform .35s}
+.bl-stepper .bl-st-dot.is-done{fill:var(--bl-accent);stroke:var(--bl-accent)}
+.bl-stepper .bl-st-dot.is-on{transform:scale(1.25)}
+.bl-stepper .bl-st-num{font-family:var(--bl-font-heading);font-weight:600;fill:var(--bl-ink-muted);text-anchor:middle;dominant-baseline:central}
+.bl-stepper .bl-st-num.is-done{fill:var(--bl-accent-ink)}
+.bl-stepper .bl-st-label{font-family:var(--bl-font-heading);font-size:13px;fill:var(--bl-ink-muted);text-anchor:middle}
+.bl-stepper .bl-st-label.is-on{font-weight:600;fill:var(--bl-ink)}
+.bl-stepper .bl-st-note{font-family:var(--bl-font-heading);font-size:13px;fill:var(--bl-accent);text-anchor:middle}
+@media (prefers-reduced-motion:reduce){.bl-stepper *{transition:none!important}}
+</style>
+<template data-bl-markup>
+<figure class="bl-stepper" aria-label="{{label}}">
+<div class="bl-stepper-fig" hidden><svg aria-hidden="true"></svg></div>
+<ol class="bl-stepper-steps">
+{{#steps}}<li data-label="{{label}}"{{#note}} data-note="{{note}}"{{/note}}><strong>{{title}}</strong> {{text}}</li>
+{{/steps}}</ol>
+<div class="bl-stepper-controls" hidden>
+<button class="bl-btn" type="button" data-step="-1" aria-label="Previous step">←</button>
+<button class="bl-btn" type="button" data-step="1">Next →</button>
+<span class="bl-stepper-count" aria-live="polite"></span>
+</div>
+{{#caption}}<figcaption>{{caption}}</figcaption>{{/caption}}
+</figure>
+</template>
+<script data-bl-component="stepper">
+{
+  const NS = 'http://www.w3.org/2000/svg';
+  const el = (name, attrs, text) => {
+    const n = document.createElementNS(NS, name);
+    for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+    if (text !== undefined) n.textContent = text;
+    return n;
+  };
+  for (const root of document.querySelectorAll('.bl-stepper')) {
+    try {
+      const items = [...root.querySelectorAll('.bl-stepper-steps > li')];
+      if (!items.length) continue;
+      const steps = items.map((li) => ({ label: li.dataset.label || '', note: li.dataset.note || '' }));
+      const fig = root.querySelector('.bl-stepper-fig');
+      const svg = fig.querySelector('svg');
+      const ctr = root.querySelector('.bl-stepper-controls');
+      const prev = ctr.querySelector('[data-step="-1"]');
+      const next = ctr.querySelector('[data-step="1"]');
+      const count = ctr.querySelector('.bl-stepper-count');
+      const list = root.querySelector('.bl-stepper-steps');
+      root.classList.add('is-live');
+      fig.hidden = false;
+      ctr.hidden = false;
+      list.setAttribute('aria-live', 'polite');
+      let i = 0;
+      let parts = null;
+      let width = 0;
+
+      const build = () => {
+        const W = svg.getBoundingClientRect().width || fig.clientWidth;
+        if (!W) return;
+        width = W;
+        const n = steps.length;
+        const small = W < 420;
+        const r = small ? 15 : 20;
+        const pad = r * 1.25 + 4;
+        const hasNote = steps.some((s) => s.note);
+        const cy = r * 1.25 + 4 + (hasNote ? 20 : 0);
+        const H = cy + r + 34;
+        const gap = n > 1 ? (W - 2 * pad) / (n - 1) : 0;
+        svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+        svg.setAttribute('height', H);
+        svg.replaceChildren();
+        const len = Math.max(0, W - 2 * pad);
+        svg.append(el('line', { class: 'bl-st-track', x1: pad, y1: cy, x2: W - pad, y2: cy }));
+        const progress = el('line', { class: 'bl-st-progress', x1: pad, y1: cy, x2: W - pad, y2: cy, 'stroke-dasharray': `${len} ${len}` });
+        svg.append(progress);
+        const dots = [];
+        const nums = [];
+        const labels = [];
+        steps.forEach((s, j) => {
+          const x = n > 1 ? pad + gap * j : W / 2;
+          dots.push(svg.appendChild(el('circle', { class: 'bl-st-dot', cx: x, cy, r })));
+          nums.push(svg.appendChild(el('text', { class: 'bl-st-num', x, y: cy, 'font-size': small ? 13 : 14 }, String(j + 1))));
+          labels.push(svg.appendChild(el('text', { class: 'bl-st-label', x, y: cy + r + 24, 'data-x': x }, s.label)));
+          if (s.note) svg.append(el('text', { class: 'bl-st-note', x, y: cy - r * 1.25 - 8 }, s.note));
+        });
+        // Long labels that would collide: show only the current one.
+        const crowded = labels.some((t) => t.getComputedTextLength() > gap - 6) && n > 1;
+        parts = { progress, dots, nums, labels, len, gap, crowded };
+        paint();
+      };
+
+      const paint = () => {
+        if (!parts) return;
+        const { progress, dots, nums, labels, len, gap, crowded } = parts;
+        const n = steps.length;
+        progress.setAttribute('stroke-dashoffset', String(n > 1 ? len - gap * i : len));
+        dots.forEach((d, j) => {
+          d.classList.toggle('is-done', j <= i);
+          d.classList.toggle('is-on', j === i);
+          nums[j].classList.toggle('is-done', j <= i);
+          labels[j].classList.toggle('is-on', j === i);
+          labels[j].style.display = crowded && j !== i ? 'none' : '';
+        });
+        // Keep the current label inside the figure.
+        const t = labels[i];
+        const x = Number(t.dataset.x);
+        const half = t.getComputedTextLength() / 2;
+        const W = width;
+        if (x - half < 0) { t.setAttribute('x', 0); t.style.textAnchor = 'start'; }
+        else if (x + half > W) { t.setAttribute('x', W); t.style.textAnchor = 'end'; }
+        labels.forEach((l) => { if (l !== t) { l.setAttribute('x', l.dataset.x); l.style.textAnchor = ''; } });
+      };
+
+      const show = () => {
+        items.forEach((li, j) => li.setAttribute('aria-hidden', String(j !== i)));
+        count.textContent = `Step ${i + 1} of ${steps.length}`;
+        prev.disabled = i === 0;
+        next.disabled = i === steps.length - 1;
+        paint();
+      };
+      prev.addEventListener('click', () => { if (i > 0) { i--; show(); } });
+      next.addEventListener('click', () => { if (i < steps.length - 1) { i++; show(); } });
+      root.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight') { e.preventDefault(); next.click(); }
+        if (e.key === 'ArrowLeft') { e.preventDefault(); prev.click(); }
+      });
+      // Swipe on touch
+      let x0 = null;
+      fig.addEventListener('pointerdown', (e) => { x0 = e.clientX; });
+      fig.addEventListener('pointerup', (e) => {
+        if (x0 === null) return;
+        const dx = e.clientX - x0;
+        x0 = null;
+        if (Math.abs(dx) > 40) (dx < 0 ? next : prev).click();
+      });
+      new ResizeObserver(() => {
+        const W = svg.getBoundingClientRect().width;
+        if (Math.abs(W - width) > 0.5) build();
+      }).observe(fig);
+      build();
+      show();
+    } catch (e) {
+      console.error('blaude stepper', e);
+    }
+  }
+}
+</script>

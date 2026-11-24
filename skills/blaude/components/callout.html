@@ -1,0 +1,14 @@
+<!-- blaude component: callout. A note, tip or warning box. -->
+<style data-bl-component="callout">
+.bl-callout{--bl-callout:var(--bl-accent);margin:var(--bl-s3) 0;padding:var(--bl-s2);border-left:3px solid var(--bl-callout);border-radius:0 var(--bl-radius) var(--bl-radius) 0;background:var(--bl-surface);font:16px/1.55 var(--bl-font-heading)}
+.bl-callout--tip{--bl-callout:var(--bl-good)}
+.bl-callout--warning{--bl-callout:var(--bl-warn)}
+.bl-callout p{margin:0}
+.bl-callout p+p{margin-top:var(--bl-s1)}
+.bl-callout>p:first-child>strong:first-child{color:var(--bl-callout)}
+</style>
+<template data-bl-markup>
+<aside class="bl-callout bl-callout--{{variant}}" role="note">
+{{{html}}}
+</aside>
+</template>

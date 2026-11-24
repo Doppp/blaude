@@ -68,6 +68,13 @@ function inPageAudit() {
     }
   }
 
+  // 2b. SVG text drawn outside the viewport (SVGs may draw past their own box)
+  for (const t of document.querySelectorAll('svg text')) {
+    if (!shown(t) || clipper(t.closest('svg'))) continue;
+    const r = t.getBoundingClientRect();
+    if (r.right > vw + 1 || r.left < -1) issues.push({ rule: 'overflow', detail: `svg text ${describe(t)} spans ${Math.round(r.left)}-${Math.round(r.right)}px in a ${vw}px viewport` });
+  }
+
   // 3. Text smaller than 13px
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
   const seen = new Set();

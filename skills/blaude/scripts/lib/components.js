@@ -70,6 +70,9 @@ const PREPARE = {
       need(typeof im.alt === 'string' && im.alt.trim(), `gallery image ${i + 1} needs alt text`);
     });
     d.count = d.images.length;
+    const first = d.images[0];
+    // Every slide takes the first image's shape, so no slide leaves an empty band.
+    d.ratio = first.width > 0 && first.height > 0 ? `${Number(first.width)}/${Number(first.height)}` : '3/2';
     d.label = d.label || 'Gallery';
     return d;
   },
@@ -131,6 +134,7 @@ const PREPARE = {
       });
     });
     d.hasModes = d.modes.length > 1;
+    d.hasHead = d.hasModes || !!d.counter;
     d.modesLabel = d.modesLabel || 'Mode';
     d.alt = d.alt || `Sequence of messages between ${names.join(', ')}`;
     return d;

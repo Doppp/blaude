@@ -1,0 +1,64 @@
+<!-- blaude component: gallery. Several images, swipeable: native horizontal scroll-snap,
+     Previous/Next buttons and arrow keys. -->
+<style data-bl-component="gallery">
+.bl-gallery{margin:var(--bl-s4) 0}
+.bl-gallery-track{display:grid;grid-auto-flow:column;grid-auto-columns:100%;gap:var(--bl-s2);overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;overscroll-behavior-x:contain;border-radius:var(--bl-radius);scrollbar-width:thin}
+.bl-gallery-item{margin:0;scroll-snap-align:start;display:flex;flex-direction:column}
+.bl-gallery-item img{display:block;width:100%;height:auto;aspect-ratio:var(--bl-gallery-ratio,3/2);object-fit:contain;background:var(--bl-surface);border-radius:var(--bl-radius)}
+.bl-gallery-item figcaption,.bl-gallery>figcaption{margin-top:var(--bl-s1);font:14px/1.5 var(--bl-font-heading);color:var(--bl-ink-muted)}
+.bl-gallery-controls{display:flex;align-items:center;gap:var(--bl-s1);margin-top:var(--bl-s1);font:14px/1.2 var(--bl-font-heading)}
+.bl-gallery-count{margin-left:auto;color:var(--bl-ink-muted)}
+@media (prefers-reduced-motion:reduce){.bl-gallery-track{scroll-behavior:auto}}
+</style>
+<template data-bl-markup>
+<figure class="bl-gallery" aria-roledescription="carousel" aria-label="{{label}}" style="--bl-gallery-ratio:{{ratio}}">
+<div class="bl-gallery-track" tabindex="0" aria-label="{{label}}, use the arrow keys">
+{{#images}}<figure class="bl-gallery-item" aria-roledescription="slide" aria-label="{{@number}} of {{count}}"><img src="{{src}}" alt="{{alt}}"{{#width}} width="{{width}}" height="{{height}}"{{/width}} decoding="async">{{#caption}}<figcaption>{{caption}}</figcaption>{{/caption}}</figure>
+{{/images}}</div>
+<div class="bl-gallery-controls" hidden>
+<button class="bl-btn" type="button" data-dir="-1" aria-label="Previous image">←</button>
+<button class="bl-btn" type="button" data-dir="1" aria-label="Next image">→</button>
+<span class="bl-gallery-count" aria-live="polite"></span>
+</div>
+{{#caption}}<figcaption>{{caption}}</figcaption>{{/caption}}
+</figure>
+</template>
+<script data-bl-component="gallery">
+{
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  for (const root of document.querySelectorAll('.bl-gallery')) {
+    try {
+      const track = root.querySelector('.bl-gallery-track');
+      const items = [...track.children];
+      if (items.length < 2) continue;
+      const ctr = root.querySelector('.bl-gallery-controls');
+      const prev = ctr.querySelector('[data-dir="-1"]');
+      const next = ctr.querySelector('[data-dir="1"]');
+      const count = ctr.querySelector('.bl-gallery-count');
+      ctr.hidden = false;
+      const at = () => Math.round(track.scrollLeft / Math.max(1, items[0].getBoundingClientRect().width + parseFloat(getComputedStyle(track).columnGap || 0)));
+      const go = (n) => {
+        const k = Math.max(0, Math.min(items.length - 1, n));
+        track.scrollTo({ left: items[k].offsetLeft - items[0].offsetLeft, behavior: reduce ? 'auto' : 'smooth' });
+      };
+      const update = () => {
+        const k = Math.max(0, Math.min(items.length - 1, at()));
+        count.textContent = `${k + 1} of ${items.length}`;
+        prev.disabled = k === 0;
+        next.disabled = k === items.length - 1;
+      };
+      prev.addEventListener('click', () => go(at() - 1));
+      next.addEventListener('click', () => go(at() + 1));
+      track.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight') { e.preventDefault(); go(at() + 1); }
+        if (e.key === 'ArrowLeft') { e.preventDefault(); go(at() - 1); }
+      });
+      let raf = 0;
+      track.addEventListener('scroll', () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(update); }, { passive: true });
+      update();
+    } catch (e) {
+      console.error('blaude gallery', e);
+    }
+  }
+}
+</script>

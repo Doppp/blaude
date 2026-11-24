@@ -1,0 +1,14 @@
+<!-- blaude component: pullquote. A line from the post, emphasised. The author's own words only. -->
+<style data-bl-component="pullquote">
+.bl-pullquote{margin:var(--bl-s4) 0}
+.bl-pullquote blockquote{margin:0;padding:0;border:0;font:italic 26px/1.35 var(--bl-font-body);color:var(--bl-ink)}
+.bl-pullquote blockquote::before{content:"";display:block;width:40px;height:3px;background:var(--bl-accent);margin-bottom:var(--bl-s2)}
+.bl-pullquote blockquote p{margin:0;text-wrap:pretty}
+.bl-pullquote figcaption{margin-top:var(--bl-s1);font:14px/1.5 var(--bl-font-heading);color:var(--bl-ink-muted)}
+</style>
+<template data-bl-markup>
+<figure class="bl-pullquote">
+<blockquote><p>{{text}}</p></blockquote>
+{{#cite}}<figcaption>{{cite}}</figcaption>{{/cite}}
+</figure>
+</template>

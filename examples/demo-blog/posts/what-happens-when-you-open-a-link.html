@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>What happens when you open a link · Blaude</title>
+<meta name="description" content="Four round trips between tapping a link and seeing a page: DNS, TCP, TLS and HTTP.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="What happens when you open a link">
+<meta property="og:description" content="Four round trips between tapping a link and seeing a page: DNS, TCP, TLS and HTTP.">
+<meta property="og:site_name" content="Blaude">
+<meta property="article:published_time" content="2026-11-22">
+<meta name="twitter:card" content="summary">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;1,7..72,400&amp;family=Instrument+Sans:wght@400;600&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap">
+<style>
+:root{
+  color-scheme:light dark;
+  --bl-bg:light-dark(#ffffff,#131417);
+  --bl-surface:light-dark(#f3f4f6,#1d1f24);
+  --bl-ink:light-dark(#1a1b1f,#e9e9ec);
+  --bl-ink-muted:light-dark(#5d6170,#a3a7b3);
+  --bl-accent:light-dark(#2950b8,#93adff);
+  --bl-accent-ink:light-dark(#ffffff,#0f1320);
+  --bl-rule:light-dark(#e2e4e9,#2c2f36);
+  --bl-good:light-dark(#1d7a4a,#6fd39b);
+  --bl-warn:light-dark(#a35a00,#f0b25a);
+  --bl-bad:light-dark(#b42318,#ff8f86);
+  --bl-chart-1:light-dark(#2950b8,#93adff);
+  --bl-chart-2:light-dark(#a35a00,#f0b25a);
+  --bl-chart-3:light-dark(#1d7a4a,#6fd39b);
+  --bl-chart-4:light-dark(#7a3db8,#c9a2ff);
+  --bl-chart-5:light-dark(#b42318,#ff8f86);
+  --bl-chart-6:light-dark(#0e7490,#5fd0e6);
+  --bl-term-bg:light-dark(#16181d,#0b0c0f);
+  --bl-term-ink:light-dark(#e6e7ea,#e6e7ea);
+  --bl-term-dim:light-dark(#8b90a0,#8b90a0);
+  --bl-term-ok:light-dark(#7fd8a4,#7fd8a4);
+  --bl-term-key:light-dark(#9fb7ff,#9fb7ff);
+  --bl-term-rule:light-dark(#3a3e48,#2a2d35);
+  --bl-font-body:'Literata',Georgia,serif;
+  --bl-font-heading:'Instrument Sans',system-ui,sans-serif;
+  --bl-font-mono:'JetBrains Mono',ui-monospace,monospace;
+  --bl-size-body:17px;
+  --bl-measure:680px;
+  --bl-radius:10px;
+  --bl-s1:8px;
+  --bl-s2:16px;
+  --bl-s3:24px;
+  --bl-s4:40px;
+}
+:root[data-theme=light]{color-scheme:light}
+:root[data-theme=dark]{color-scheme:dark}
+/* Blaude base.css: layout and typography for posts and indexes.
+   Reads theme tokens only (var(--bl-*)). Spacing uses only --bl-s1..--bl-s4.
+   Header, body and footer share one column: .bl-col. */
+
+:root{
+  color-scheme:light dark;
+  --bl-pad:max(5vw,20px,env(safe-area-inset-left),env(safe-area-inset-right));
+}
+:root[data-theme=light]{color-scheme:light}
+:root[data-theme=dark]{color-scheme:dark}
+
+*,*::before,*::after{box-sizing:border-box;min-width:0}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%;scroll-padding-top:calc(44px + var(--bl-s4))}
+body{margin:0;background:var(--bl-bg);color:var(--bl-ink);font:var(--bl-size-body)/1.65 var(--bl-font-body);overflow-x:clip;overflow-wrap:break-word}
+img,svg,video{max-width:100%}
+img{height:auto}
+a{color:var(--bl-accent);text-underline-offset:.2em;text-decoration-thickness:1px}
+:focus-visible{outline:2px solid var(--bl-accent);outline-offset:2px}
+[hidden]{display:none!important}
+
+/* One column */
+.bl-col{max-width:calc(var(--bl-measure) + 2*var(--bl-pad));margin-inline:auto;padding-inline:var(--bl-pad)}
+
+/* Tap targets: at least 44 x 44 */
+.bl-hit{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px}
+
+/* Buttons */
+.bl-btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;padding:0 var(--bl-s2);border-radius:var(--bl-radius);border:1px solid var(--bl-rule);background:var(--bl-surface);color:var(--bl-ink);font:600 15px/1 var(--bl-font-heading);cursor:pointer;flex:none}
+.bl-btn--primary{background:var(--bl-accent);border-color:var(--bl-accent);color:var(--bl-accent-ink)}
+.bl-btn--quiet{background:var(--bl-bg);font-size:13px}
+.bl-btn:disabled{opacity:.4;cursor:default}
+.bl-textbtn{display:inline-flex;align-items:center;min-height:44px;min-width:44px;padding:0;border:0;background:none;font:inherit;color:var(--bl-accent);cursor:pointer}
+
+/* Sticky post header */
+.bl-bar{position:sticky;top:0;z-index:5;background:var(--bl-bg);border-bottom:1px solid var(--bl-rule);font:600 15px/1.2 var(--bl-font-heading);padding-top:env(safe-area-inset-top)}
+.bl-bar .bl-col{display:flex;justify-content:space-between;align-items:center;gap:var(--bl-s2);min-height:calc(44px + var(--bl-s1))}
+.bl-bar a{display:inline-flex;align-items:center;min-height:44px;min-width:44px;color:var(--bl-ink);text-decoration:none}
+.bl-bar nav{display:flex;gap:var(--bl-s3)}
+.bl-bar nav a{justify-content:flex-end;color:var(--bl-ink-muted);font-weight:400}
+.bl-bar a:hover{color:var(--bl-accent)}
+
+/* Post */
+.bl-post{padding-top:var(--bl-s4)}
+.bl-title{font:600 clamp(30px,5.6vw,40px)/1.12 var(--bl-font-heading);letter-spacing:-.015em;margin:0 0 var(--bl-s2)}
+.bl-meta{display:flex;flex-wrap:wrap;align-items:center;gap:var(--bl-s1) var(--bl-s2);margin:0 0 var(--bl-s4);font:14px/1.4 var(--bl-font-heading);color:var(--bl-ink-muted)}
+.bl-body h2{font:600 24px/1.2 var(--bl-font-heading);margin:var(--bl-s4) 0 var(--bl-s1)}
+.bl-body h3{font:600 19px/1.3 var(--bl-font-heading);margin:var(--bl-s3) 0 var(--bl-s1)}
+.bl-body h4{font:600 17px/1.3 var(--bl-font-heading);margin:var(--bl-s3) 0 var(--bl-s1)}
+.bl-body p{margin:0 0 var(--bl-s2);text-wrap:pretty}
+.bl-body>p:first-child{font-size:20px;line-height:1.55}
+.bl-body ul,.bl-body ol{margin:0 0 var(--bl-s2);padding-left:var(--bl-s3)}
+.bl-body li>p{margin:0}
+.bl-body blockquote{margin:0 0 var(--bl-s2);padding-left:var(--bl-s2);border-left:3px solid var(--bl-rule);color:var(--bl-ink-muted)}
+.bl-body hr{border:0;border-top:1px solid var(--bl-rule);margin:var(--bl-s4) 0}
+.bl-body code{font-family:var(--bl-font-mono);font-size:.88em;background:var(--bl-surface);border-radius:calc(var(--bl-radius)/2);box-shadow:0 0 0 2px var(--bl-surface)}
+.bl-body pre{margin:0 0 var(--bl-s3);padding:var(--bl-s2);background:var(--bl-surface);border-radius:var(--bl-radius);overflow-x:auto;font:14px/1.6 var(--bl-font-mono)}
+.bl-body pre code{font-size:inherit;background:none;box-shadow:none;border-radius:0}
+.bl-body img{display:block;border-radius:var(--bl-radius)}
+
+/* Tables scroll inside their own box */
+.bl-table{overflow-x:auto;margin:0 0 var(--bl-s3)}
+.bl-table table{border-collapse:collapse;width:100%;font:15px/1.4 var(--bl-font-heading)}
+.bl-table th,.bl-table td{text-align:left;padding:var(--bl-s1) var(--bl-s2) var(--bl-s1) 0;border-bottom:1px solid var(--bl-rule);vertical-align:top}
+.bl-table th{font-weight:600}
+.bl-table td.bl-num,.bl-table th.bl-num{text-align:right;font-variant-numeric:tabular-nums}
+
+/* Related links */
+.bl-related{margin-top:var(--bl-s4);padding-top:var(--bl-s3);border-top:1px solid var(--bl-rule)}
+.bl-related h2{font:600 15px/1.2 var(--bl-font-heading);margin:0}
+.bl-related ul{list-style:none;margin:var(--bl-s1) 0 0;padding:0}
+.bl-related a{display:flex;flex-direction:column;justify-content:center;min-height:44px;padding-block:var(--bl-s1);color:var(--bl-ink);text-decoration:none;font:17px/1.4 var(--bl-font-heading)}
+.bl-related a:hover .bl-related-t{color:var(--bl-accent)}
+.bl-related-n{font-size:14px;color:var(--bl-ink-muted)}
+
+/* Footer */
+.bl-foot{margin-top:var(--bl-s4);border-top:1px solid var(--bl-rule);font:15px/1.5 var(--bl-font-heading);color:var(--bl-ink-muted)}
+.bl-foot .bl-col{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:0 var(--bl-s2);padding-top:var(--bl-s2);padding-bottom:max(var(--bl-s4),env(safe-area-inset-bottom))}
+.bl-foot a{display:inline-flex;align-items:center;min-height:44px}
+
+/* Reserve the height of the tallest item: children share one grid cell */
+.bl-stack{display:grid}
+.bl-stack>*{grid-area:1/1}
+.bl-stack>[aria-hidden=true]{visibility:hidden}
+
+/* Visually hidden, still read aloud */
+.bl-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
+}
+/* callout */
+.bl-callout{--bl-callout:var(--bl-accent);margin:var(--bl-s3) 0;padding:var(--bl-s2);border-left:3px solid var(--bl-callout);border-radius:0 var(--bl-radius) var(--bl-radius) 0;background:var(--bl-surface);font:16px/1.55 var(--bl-font-heading)}
+.bl-callout--tip{--bl-callout:var(--bl-good)}
+.bl-callout--warning{--bl-callout:var(--bl-warn)}
+.bl-callout p{margin:0}
+.bl-callout p+p{margin-top:var(--bl-s1)}
+.bl-callout>p:first-child>strong:first-child{color:var(--bl-callout)}
+/* sequence */
+.bl-sequence{margin:var(--bl-s4) 0;padding:var(--bl-s3) 0;border-top:1px solid var(--bl-rule);border-bottom:1px solid var(--bl-rule)}
+.bl-seq-head{display:flex;flex-wrap:wrap;align-items:center;gap:var(--bl-s1) var(--bl-s2)}
+.bl-seg{display:inline-flex;flex-wrap:wrap;border:1px solid var(--bl-rule);border-radius:var(--bl-radius);background:var(--bl-surface);overflow:hidden}
+.bl-seg button{min-height:44px;min-width:44px;padding:0 var(--bl-s2);border:0;border-radius:0;background:none;color:var(--bl-ink-muted);font:600 14px/1 var(--bl-font-heading);cursor:pointer}
+.bl-seg button[aria-pressed=true]{background:var(--bl-bg);color:var(--bl-ink);box-shadow:inset 0 0 0 1px var(--bl-rule)}
+.bl-seq-counter{font:600 14px/1.2 var(--bl-font-heading);color:var(--bl-ink-muted)}
+.bl-seq-counter b{color:var(--bl-accent);font-size:16px}
+.bl-seq-fig{margin-top:var(--bl-s2)}
+.bl-seq-fig svg{display:block;width:100%}
+.bl-seq-text{display:grid;margin:var(--bl-s2) 0 var(--bl-s1);font:16px/1.5 var(--bl-font-heading)}
+.bl-seq-text>div{grid-area:1/1}
+.bl-seq-text>[aria-hidden=true]{visibility:hidden}
+.bl-seq-text strong{display:block;font-size:17px}
+.bl-seq-controls{display:flex;flex-wrap:wrap;align-items:center;gap:var(--bl-s1);font:14px/1.2 var(--bl-font-heading)}
+.bl-seq-count{margin-left:auto;color:var(--bl-ink-muted)}
+.bl-seq-data{font:16px/1.5 var(--bl-font-heading)}
+.bl-seq-data h3{font:600 16px/1.3 var(--bl-font-heading);margin:var(--bl-s2) 0 var(--bl-s1)}
+.bl-seq-data ol,.bl-seq-lanes{margin:0;padding-left:var(--bl-s3)}
+.bl-seq-lanes{list-style:none;padding:0;display:flex;flex-wrap:wrap;gap:0 var(--bl-s2);font-weight:600}
+.bl-seq-route{display:block;font:14px/1.4 var(--bl-font-mono);color:var(--bl-ink-muted)}
+.bl-sequence figcaption{margin-top:var(--bl-s2);font:14px/1.5 var(--bl-font-heading);color:var(--bl-ink-muted)}
+.bl-sequence .bl-sq-band{fill:var(--bl-surface)}
+.bl-sequence .bl-sq-band.is-later{opacity:.45}
+.bl-sequence .bl-sq-group{font:600 13px var(--bl-font-heading);fill:var(--bl-ink-muted);stroke:var(--bl-surface);stroke-width:4;paint-order:stroke}
+.bl-sequence .bl-sq-lane{stroke:var(--bl-rule);stroke-width:2}
+.bl-sequence .bl-sq-name{font-family:var(--bl-font-heading);font-weight:600;fill:var(--bl-ink);text-anchor:middle}
+.bl-sequence .bl-sq-msg{stroke:var(--bl-accent);stroke-width:1.5;opacity:.7}
+.bl-sequence .bl-sq-msg.is-on{stroke-width:2.5;opacity:1}
+.bl-sequence .bl-sq-head{fill:var(--bl-accent)}
+.bl-sequence .bl-sq-label{font-family:var(--bl-font-heading);font-size:13px;fill:var(--bl-ink-muted);text-anchor:middle;stroke:var(--bl-surface);stroke-width:5;paint-order:stroke}
+.bl-sequence .bl-sq-label.is-on{font-weight:600;fill:var(--bl-ink)}
+.bl-sequence .bl-sq-packet{fill:var(--bl-warn);stroke:var(--bl-bg);stroke-width:2}
+/* terminal */
+.bl-terminal{margin:var(--bl-s3) 0;background:var(--bl-term-bg);color:var(--bl-term-ink);border-radius:var(--bl-radius);overflow:hidden}
+.bl-term-top{display:flex;align-items:center;gap:var(--bl-s1);min-height:44px;padding:0 var(--bl-s1) 0 var(--bl-s2);border-bottom:1px solid var(--bl-term-rule)}
+.bl-term-top i{width:11px;height:11px;border-radius:50%;background:var(--bl-term-rule);flex:none}
+.bl-term-top span{margin-left:var(--bl-s1);font:13px/1.2 var(--bl-font-mono);color:var(--bl-term-dim)}
+.bl-term-replay{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;padding:0 var(--bl-s1);margin-left:auto;border:0;background:none;color:var(--bl-term-ink);font:600 13px/1 var(--bl-font-heading);cursor:pointer}
+.bl-term-screen{display:grid;overflow-x:auto}
+.bl-term-screen>pre{grid-area:1/1;margin:0;padding:var(--bl-s2);background:none;border-radius:0;font:13.5px/1.65 var(--bl-font-mono);color:var(--bl-term-ink);white-space:pre;overflow:visible}
+.bl-term-screen>pre[aria-hidden=true]{visibility:hidden}
+.bl-term-line[data-kind=cmd]::before,.bl-term-p::before{content:"$ ";color:var(--bl-term-key)}
+.bl-term-line[data-kind=out]{color:var(--bl-term-dim)}
+.bl-term-line[data-kind=ok]{color:var(--bl-term-ok)}
+.bl-term-caret{display:inline-block;width:8px;height:1.1em;vertical-align:-2px;background:var(--bl-term-ink);animation:bl-blink 1s steps(1) infinite}
+@keyframes bl-blink{50%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.bl-term-caret{animation:none}}
+/* codetabs */
+.bl-codetabs{margin:var(--bl-s3) 0;border:1px solid var(--bl-rule);border-radius:var(--bl-radius);overflow:hidden}
+.bl-tabbar{display:flex;align-items:center;gap:0;padding:0 var(--bl-s1);background:var(--bl-surface);border-bottom:1px solid var(--bl-rule);overflow-x:auto}
+.bl-tabbar [role=tab]{min-height:44px;min-width:44px;padding:0 var(--bl-s2);border:0;border-bottom:2px solid transparent;background:none;color:var(--bl-ink-muted);font:600 14px/1 var(--bl-font-mono);cursor:pointer;flex:none}
+.bl-tabbar [role=tab][aria-selected=true]{color:var(--bl-ink);border-bottom-color:var(--bl-accent)}
+.bl-tabbar .bl-copy{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;padding:0 var(--bl-s1);margin-left:auto;border:0;background:none;color:var(--bl-accent);font:600 13px/1 var(--bl-font-heading);cursor:pointer;flex:none}
+.bl-tabname{padding:var(--bl-s1) var(--bl-s2) 0;font:600 14px/1.4 var(--bl-font-mono);color:var(--bl-ink-muted)}
+.bl-codetabs pre{margin:0;padding:var(--bl-s2);background:none;border-radius:0;overflow-x:auto;font:14px/1.65 var(--bl-font-mono)}
+.bl-codetabs .bl-hl-k{color:var(--bl-accent);font-weight:600}
+.bl-codetabs .bl-hl-s{color:var(--bl-good)}
+.bl-codetabs .bl-hl-c{color:var(--bl-ink-muted);font-style:italic}
+
+</style>
+</head>
+<body>
+<header class="bl-bar"><div class="bl-col" data-bl-region="header"><a href="https://claude.ai/artifact/8Ynx2ggSTWKAmGroYKt8mj">Blaude</a><nav aria-label="Blog"><a href="https://claude.ai/artifact/8Ynx2ggSTWKAmGroYKt8mj#about">About</a></nav></div></header>
+<main class="bl-col bl-post" data-bl-region="body">
+<article>
+<h1 class="bl-title">What happens when you open a link</h1>
+<div class="bl-meta"><time datetime="2026-11-22">22 Nov 2026</time><span>6 min read</span><span>web, networking</span></div>
+<div class="bl-body">
+<p>You tap a link and a page appears. In between, your browser has a short, very polite conversation with two other computers. Most of the wait is that conversation, not the download.</p>
+<p>Each exchange is a round trip: a message out, a reply back. Round trips are cheap on the same street and expensive across an ocean, so the number of them matters more than how fast your connection is.</p>
+<h2 id="the-conversation">The conversation</h2>
+<p>Press Play to watch a first visit to <code>notes.example</code>, then switch to a return visit.</p>
+<figure class="bl-sequence" id="bl-sequence-1" data-counter="Round trips">
+<div class="bl-seq-head" hidden>
+<div class="bl-seg" role="group" aria-label="Visit"><button type="button" data-mode="0" aria-pressed="true">First visit</button><button type="button" data-mode="1" aria-pressed="false">Return visit</button></div>
+<span class="bl-seq-counter" aria-live="polite"></span>
+</div>
+<div class="bl-seq-fig" hidden><svg role="img" aria-label="Sequence of messages between browser, DNS resolver and server"></svg></div>
+<div class="bl-seq-text" aria-live="polite" hidden></div>
+<div class="bl-seq-controls" hidden>
+<button class="bl-btn bl-btn--primary" type="button" data-act="play">Play</button>
+<button class="bl-btn" type="button" data-act="prev" aria-label="Previous message">←</button>
+<button class="bl-btn" type="button" data-act="next" aria-label="Next message">→</button>
+<span class="bl-seq-count"></span>
+</div>
+<div class="bl-seq-data">
+<ul class="bl-seq-lanes"><li>Browser</li><li data-short="Resolver">DNS resolver</li><li>Server</li></ul>
+<section class="bl-seq-mode" data-name="First visit">
+<h3>First visit</h3>
+<p class="bl-seq-intro" data-title="Ready">Nothing is cached yet. Press Play.</p>
+<ol><li data-from="Browser" data-to="DNS resolver" data-label="notes.example?" data-group="DNS"><span class="bl-seq-route">Browser → DNS resolver: notes.example?</span><strong>Ask for the address</strong> The browser has never seen notes.example, so it asks a DNS resolver which IP address the name points to.</li>
+<li data-from="DNS resolver" data-to="Browser" data-label="203.0.113.10" data-group="DNS"><span class="bl-seq-route">DNS resolver → Browser: 203.0.113.10</span><strong>Address found</strong> The resolver answers with an IP address. The browser caches it for next time.</li>
+<li data-from="Browser" data-to="Server" data-label="SYN" data-group="TCP"><span class="bl-seq-route">Browser → Server: SYN</span><strong>Open a connection</strong> The browser asks the server to open a TCP connection.</li>
+<li data-from="Server" data-to="Browser" data-label="SYN-ACK" data-group="TCP"><span class="bl-seq-route">Server → Browser: SYN-ACK</span><strong>Server agrees</strong> The server acknowledges. One more round trip done, and still no page.</li>
+<li data-from="Browser" data-to="Server" data-label="ClientHello" data-group="TLS"><span class="bl-seq-route">Browser → Server: ClientHello</span><strong>Start encryption</strong> The browser proposes how to encrypt the connection and sends its half of a key exchange.</li>
+<li data-from="Server" data-to="Browser" data-label="ServerHello + cert" data-group="TLS"><span class="bl-seq-route">Server → Browser: ServerHello + cert</span><strong>Server proves who it is</strong> The server picks the settings, sends its certificate, and finishes its half of the key exchange. With TLS 1.3 this takes one round trip.</li>
+<li data-from="Browser" data-to="Server" data-label="GET /" data-group="HTTP"><span class="bl-seq-route">Browser → Server: GET /</span><strong>Ask for the page</strong> Now encrypted, the browser finally asks for the page.</li>
+<li data-from="Server" data-to="Browser" data-label="200 OK + HTML" data-group="HTTP"><span class="bl-seq-route">Server → Browser: 200 OK + HTML</span><strong>The page arrives</strong> The first bytes of HTML arrive after four round trips. The browser starts rendering while the rest streams in.</li>
+</ol>
+</section>
+<section class="bl-seq-mode" data-name="Return visit">
+<h3>Return visit</h3>
+<p class="bl-seq-intro" data-title="Ready">The browser visited a moment ago. Press Play.</p>
+<ol><li data-from="Browser" data-to="Server" data-label="GET /" data-group="HTTP"><span class="bl-seq-route">Browser → Server: GET /</span><strong>Straight to the request</strong> The address is cached and the encrypted connection is still open, so the browser skips DNS, TCP and TLS.</li>
+<li data-from="Server" data-to="Browser" data-label="200 OK + HTML" data-group="HTTP"><span class="bl-seq-route">Server → Browser: 200 OK + HTML</span><strong>One round trip</strong> The page arrives after a single round trip. Same server, same network, a fraction of the wait.</li>
+</ol>
+</section>
+
+</div>
+
+</figure>
+<p>Four round trips before the first byte of the page arrives. A return visit skips most of them, because the browser remembers the address and can keep the connection open.</p>
+<aside class="bl-callout bl-callout--tip" role="note">
+<p><strong>Why this matters.</strong> At 80 ms per round trip, four of them cost a third of a second before any HTML arrives. Cutting round trips is usually a bigger win than shrinking files.</p>
+</aside>
+<h2 id="what-is-actually-sent">What is actually sent</h2>
+<p>Once the connection is ready, the request itself is small. Shown here as HTTP/1.1 text for readability; HTTP/2 and HTTP/3 send the same fields in binary.</p>
+<div class="bl-codetabs" id="bl-codetabs-3">
+<div class="bl-tabbar" role="tablist" aria-label="Request and response" hidden>
+<button role="tab" type="button" id="bl-codetabs-3-tab-0" aria-controls="bl-codetabs-3-panel-0" aria-selected="true" tabindex="0">request</button><button role="tab" type="button" id="bl-codetabs-3-tab-1" aria-controls="bl-codetabs-3-panel-1" aria-selected="false" tabindex="-1">response</button>
+<button class="bl-copy" type="button">Copy</button>
+</div>
+<div class="bl-tabpanel" role="tabpanel" id="bl-codetabs-3-panel-0" aria-labelledby="bl-codetabs-3-tab-0">
+<div class="bl-tabname">request</div>
+<pre><code data-lang="http">GET / HTTP/1.1
+Host: notes.example
+User-Agent: Mozilla/5.0 (iPhone; ...)
+Accept: text/html
+Accept-Encoding: br, gzip
+# no body: a GET only asks</code></pre>
+</div>
+<div class="bl-tabpanel" role="tabpanel" id="bl-codetabs-3-panel-1" aria-labelledby="bl-codetabs-3-tab-1">
+<div class="bl-tabname">response</div>
+<pre><code data-lang="http">HTTP/1.1 200 OK
+Content-Type: text/html; charset=utf-8
+Content-Encoding: br
+Cache-Control: max-age=300
+
+&lt;!doctype html&gt;
+&lt;html lang=&quot;en&quot;&gt;
+  &lt;head&gt;&lt;title&gt;Notes&lt;/title&gt;&lt;/head&gt;
+  &lt;!-- the browser starts rendering here --&gt;</code></pre>
+</div>
+
+</div>
+<h2 id="measuring-it-yourself">Measuring it yourself</h2>
+<p>Two commands show every stage. <code>dig</code> asks DNS for the address, and curl can print how long each step took.</p>
+<div class="bl-terminal" role="group" aria-label="Terminal: measuring a page load with dig and curl">
+<div class="bl-term-top"><i></i><i></i><i></i><span>~</span><button class="bl-term-replay" type="button" hidden>Replay</button></div>
+<div class="bl-term-screen"><pre><code><span class="bl-term-line" data-kind="cmd">dig +short notes.example</span>
+<span class="bl-term-line" data-kind="ok">203.0.113.10</span>
+<span class="bl-term-line" data-kind="cmd">curl -so /dev/null -w @timing.txt https://notes.example</span>
+<span class="bl-term-line" data-kind="out">dns lookup      0.012s</span>
+<span class="bl-term-line" data-kind="out">tcp connected   0.031s</span>
+<span class="bl-term-line" data-kind="out">tls done        0.058s</span>
+<span class="bl-term-line" data-kind="ok">first byte      0.084s</span>
+</code></pre></div>
+</div>
+<p>Each figure from curl is cumulative, so the gaps tell the story: about 12 ms finding the address, 19 ms connecting, 27 ms on encryption, and 26 ms waiting for the server.</p>
+<aside class="bl-callout bl-callout--warning" role="note">
+<p><strong>Watch the last gap.</strong> If time to first byte is large while the others are small, the network is fine. The server is slow to answer.</p>
+</aside>
+</div>
+</article>
+</main>
+<footer class="bl-foot"><div class="bl-col" data-bl-region="footer"><a href="https://claude.ai/artifact/8Ynx2ggSTWKAmGroYKt8mj">← All posts</a><span>Made with Blaude</span></div></footer>
+<script type="application/json" id="blaude-post">{
+  "blaude": "1.0",
+  "blogId": "demo-0001",
+  "indexUrl": "https://claude.ai/artifact/8Ynx2ggSTWKAmGroYKt8mj",
+  "title": "What happens when you open a link",
+  "date": "2026-11-22",
+  "description": "Four round trips between tapping a link and seeing a page: DNS, TCP, TLS and HTTP.",
+  "tags": [
+    "web",
+    "networking"
+  ],
+  "theme": "ledger",
+  "blaudeVersion": "1.0.0",
+  "components": [
+    "callout",
+    "sequence",
+    "terminal",
+    "codetabs"
+  ],
+  "related": []
+}</script>
+<script data-bl-component="sequence">
+{
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const NS = 'http://www.w3.org/2000/svg';
+  const el = (name, attrs, text) => {
+    const n = document.createElementNS(NS, name);
+    for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+    if (text !== undefined) n.textContent = text;
+    return n;
+  };
+  const txt = (title, text) => {
+    const d = document.createElement('div');
+    const b = document.createElement('strong');
+    b.textContent = title;
+    d.append(b, document.createTextNode(text));
+    return d;
+  };
+  let uid = 0;
+  for (const root of document.querySelectorAll('.bl-sequence')) {
+    try {
+      const data = root.querySelector('.bl-seq-data');
+      const laneEls = [...data.querySelectorAll('.bl-seq-lanes > li')];
+      const lanes = laneEls.map((l) => ({ name: l.textContent.trim(), short: l.dataset.short || '' }));
+      const laneIndex = (n) => lanes.findIndex((l) => l.name === n);
+      const modes = [...data.querySelectorAll('.bl-seq-mode')].map((sec) => {
+        const intro = sec.querySelector('.bl-seq-intro');
+        return {
+          intro: intro ? { title: intro.dataset.title || '', text: intro.textContent.trim() } : null,
+          msgs: [...sec.querySelectorAll('ol > li')].map((li) => {
+            const strong = li.querySelector('strong');
+            const title = strong ? strong.textContent : '';
+            let body = '';
+            for (let n = strong ? strong.nextSibling : null; n; n = n.nextSibling) body += n.textContent;
+            return { f: laneIndex(li.dataset.from), t: laneIndex(li.dataset.to), l: li.dataset.label || '', g: li.dataset.group || '', h: title, d: body.trim() };
+          }).filter((m) => m.f >= 0 && m.t >= 0),
+        };
+      });
+      if (!lanes.length || !modes.length) continue;
+      const counterLabel = root.dataset.counter || '';
+      const head = root.querySelector('.bl-seq-head');
+      const fig = root.querySelector('.bl-seq-fig');
+      const svg = fig.querySelector('svg');
+      const textBox = root.querySelector('.bl-seq-text');
+      const ctr = root.querySelector('.bl-seq-controls');
+      const counter = root.querySelector('.bl-seq-counter');
+      const cnt = ctr.querySelector('.bl-seq-count');
+      const playB = ctr.querySelector('[data-act=play]');
+      const prevB = ctr.querySelector('[data-act=prev]');
+      const nextB = ctr.querySelector('[data-act=next]');
+      const markerId = `bl-sq-ah-${++uid}`;
+
+      // Step texts for every mode share one grid cell, so the box keeps the tallest height.
+      const texts = modes.map((m) => {
+        const intro = txt(m.intro ? m.intro.title : '', m.intro ? m.intro.text : '');
+        const list = m.msgs.map((x) => txt(x.h, x.d));
+        textBox.append(intro, ...list);
+        return { intro, list };
+      });
+
+      data.hidden = true;
+      if (head) head.hidden = false;
+      fig.hidden = false;
+      textBox.hidden = false;
+      ctr.hidden = false;
+
+      let mode = 0;
+      let i = -1;
+      let anim = null;
+      let timer = null;
+      let packet = null;
+      const ROW = 46;
+      const TOP = 56;
+      const geo = () => {
+        const W = fig.clientWidth;
+        const n = lanes.length;
+        const H = TOP + modes[mode].msgs.length * ROW + 20;
+        const inset = n > 1 ? 0.13 : 0.5;
+        const xs = lanes.map((_, j) => (n > 1 ? W * (inset + ((1 - 2 * inset) * j) / (n - 1)) : W / 2));
+        return { W, H, xs, y: (k) => TOP + 20 + k * ROW };
+      };
+      const draw = () => {
+        const { W, H, xs, y } = geo();
+        if (!W) return;
+        const msgs = modes[mode].msgs;
+        const small = W < 480;
+        svg.replaceChildren();
+        svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+        svg.setAttribute('height', H);
+        const defs = el('defs', {});
+        const marker = el('marker', { id: markerId, viewBox: '0 0 10 10', refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: 'auto-start-reverse' });
+        marker.append(el('path', { d: 'M0 0L10 5L0 10z', class: 'bl-sq-head' }));
+        defs.append(marker);
+        svg.append(defs);
+        const groups = [];
+        let k = 0;
+        while (k < msgs.length) {
+          const g = msgs[k].g;
+          let e = k;
+          while (e + 1 < msgs.length && msgs[e + 1].g === g) e++;
+          svg.append(el('rect', { class: `bl-sq-band${k <= i ? '' : ' is-later'}`, x: 0, y: y(k) - ROW / 2 + 4, width: W, height: (e - k + 1) * ROW - 8, rx: 8 }));
+          if (g) groups.push([g, y(k) - ROW / 2 + 22]);
+          k = e + 1;
+        }
+        lanes.forEach((ln, j) => {
+          svg.append(el('line', { class: 'bl-sq-lane', x1: xs[j], y1: TOP - 6, x2: xs[j], y2: H - 8 }));
+          svg.append(el('text', { class: 'bl-sq-name', x: xs[j], y: TOP - 18, 'font-size': small ? 13 : 14 }, small && ln.short ? ln.short : ln.name));
+        });
+        for (const [g, gy] of groups) svg.append(el('text', { class: 'bl-sq-group', x: 8, y: gy }, g));
+        msgs.forEach((m, j) => {
+          if (j > i) return;
+          const yy = y(j);
+          const x1 = xs[m.f];
+          const x2 = xs[m.t];
+          const dir = Math.sign(x2 - x1) || 1;
+          const cur = j === i;
+          const flying = !!(anim && cur && packet);
+          const ex = flying ? packet.x : x2 - dir * 4;
+          const attrs = { class: `bl-sq-msg${cur ? ' is-on' : ''}`, x1: x1 + dir * 4, y1: yy, x2: ex, y2: yy };
+          if (!flying) attrs['marker-end'] = `url(#${markerId})`;
+          svg.append(el('line', attrs));
+          if (!flying) svg.append(el('text', { class: `bl-sq-label${cur ? ' is-on' : ''}`, x: (x1 + x2) / 2, y: yy - 8 }, m.l));
+        });
+        if (anim && packet) svg.append(el('circle', { class: 'bl-sq-packet', cx: packet.x, cy: packet.y, r: 6 }));
+      };
+      const trips = () => {
+        let n = 0;
+        const msgs = modes[mode].msgs;
+        for (let j = 0; j <= i && j < msgs.length; j++) if (msgs[j].t === 0 && msgs[j].f !== 0) n++;
+        return n;
+      };
+      const show = () => {
+        const msgs = modes[mode].msgs;
+        texts.forEach((t, mi) => {
+          t.intro.setAttribute('aria-hidden', String(!(mi === mode && i < 0)));
+          t.list.forEach((d, j) => d.setAttribute('aria-hidden', String(!(mi === mode && j === i))));
+        });
+        cnt.textContent = `${Math.max(i + 1, 0)} of ${msgs.length}`;
+        if (counter) {
+          counter.textContent = `${counterLabel}: `;
+          const b = document.createElement('b');
+          b.textContent = String(trips());
+          counter.append(b);
+        }
+        prevB.disabled = i <= 0 || !!anim;
+        nextB.disabled = i >= msgs.length - 1 || !!anim;
+        draw();
+      };
+      const stop = () => {
+        if (anim) cancelAnimationFrame(anim);
+        if (timer) clearInterval(timer);
+        anim = null;
+        timer = null;
+        packet = null;
+        playB.textContent = 'Play';
+      };
+      const play = () => {
+        stop();
+        const msgs = modes[mode].msgs;
+        i = -1;
+        show();
+        if (reduce) {
+          playB.textContent = 'Playing…';
+          timer = setInterval(() => {
+            if (i >= msgs.length - 1) {
+              clearInterval(timer);
+              timer = null;
+              playB.textContent = 'Replay';
+              return;
+            }
+            i++;
+            show();
+          }, 1300);
+          return;
+        }
+        playB.textContent = 'Playing…';
+        const fly = 650;
+        const hold = 1250;
+        let t0 = null;
+        const tick = (ts) => {
+          if (t0 === null) t0 = ts;
+          const t = ts - t0;
+          const k = Math.floor(t / (fly + hold));
+          if (k >= msgs.length) {
+            i = msgs.length - 1;
+            anim = null;
+            packet = null;
+            playB.textContent = 'Replay';
+            show();
+            return;
+          }
+          const u = t - k * (fly + hold);
+          const { xs, y } = geo();
+          const m = msgs[k];
+          i = k;
+          if (u < fly) {
+            const f = u / fly;
+            const e = f < 0.5 ? 2 * f * f : 1 - (-2 * f + 2) ** 2 / 2;
+            packet = { x: xs[m.f] + (xs[m.t] - xs[m.f]) * e, y: y(k) };
+          } else packet = null;
+          anim = requestAnimationFrame(tick);
+          show();
+        };
+        anim = requestAnimationFrame(tick);
+      };
+      root.querySelectorAll('.bl-seg button').forEach((b) => b.addEventListener('click', () => {
+        stop();
+        mode = Number(b.dataset.mode);
+        i = -1;
+        root.querySelectorAll('.bl-seg button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+        show();
+      }));
+      playB.addEventListener('click', play);
+      prevB.addEventListener('click', () => { if (i > 0) { i--; show(); } });
+      nextB.addEventListener('click', () => { if (i < modes[mode].msgs.length - 1) { stop(); i++; show(); } });
+      root.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight') { e.preventDefault(); nextB.click(); }
+        if (e.key === 'ArrowLeft') { e.preventDefault(); prevB.click(); }
+      });
+      let lastW = 0;
+      new ResizeObserver(() => {
+        if (Math.abs(fig.clientWidth - lastW) > 0.5) { lastW = fig.clientWidth; draw(); }
+      }).observe(fig);
+      show();
+    } catch (e) {
+      console.error('blaude sequence', e);
+    }
+  }
+}
+</script>
+<script data-bl-component="terminal">
+{
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const esc = (s) => s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  for (const root of document.querySelectorAll('.bl-terminal')) {
+    try {
+      const screen = root.querySelector('.bl-term-screen');
+      const full = screen.querySelector('pre');
+      const lines = [...full.querySelectorAll('.bl-term-line')].map((l) => ({ kind: l.dataset.kind || 'out', text: l.textContent }));
+      // The full transcript stays in place, invisible, so the box is sized to its content.
+      full.setAttribute('aria-hidden', 'true');
+      full.querySelector('code').insertAdjacentHTML('beforeend', '<span class="bl-term-p"></span>');
+      const live = document.createElement('pre');
+      live.setAttribute('aria-label', root.getAttribute('aria-label') || 'Terminal');
+      screen.appendChild(live);
+      const replay = root.querySelector('.bl-term-replay');
+      let run = 0;
+      const type = async () => {
+        const me = ++run;
+        let html = '';
+        const wait = (ms) => new Promise((r) => setTimeout(r, reduce ? 0 : ms));
+        const paint = (extra) => { if (me === run) live.innerHTML = html + (extra || ''); };
+        if (reduce) {
+          html = lines.map((l) => (l.kind === 'cmd' ? `<span class="bl-term-p"></span>${esc(l.text)}` : `<span class="bl-term-line" data-kind="${l.kind}">${esc(l.text)}</span>`)).join('\n') + '\n';
+          paint('<span class="bl-term-p"></span>');
+          return;
+        }
+        for (const l of lines) {
+          if (me !== run) return;
+          if (l.kind === 'cmd') {
+            let typed = '';
+            for (const ch of l.text) {
+              typed += ch;
+              paint(`<span class="bl-term-p"></span>${esc(typed)}<span class="bl-term-caret"></span>`);
+              await wait(30);
+            }
+            html += `<span class="bl-term-p"></span>${esc(l.text)}\n`;
+            await wait(420);
+          } else {
+            html += `<span class="bl-term-line" data-kind="${l.kind}">${esc(l.text)}</span>\n`;
+            paint();
+            await wait(160);
+          }
+        }
+        paint('<span class="bl-term-p"></span><span class="bl-term-caret"></span>');
+      };
+      replay.hidden = false;
+      replay.addEventListener('click', type);
+      if ('IntersectionObserver' in window) {
+        const io = new IntersectionObserver((es) => {
+          if (es.some((e) => e.isIntersecting)) { io.disconnect(); type(); }
+        }, { threshold: 0.4 });
+        io.observe(root);
+      } else type();
+    } catch (e) {
+      console.error('blaude terminal', e);
+    }
+  }
+}
+</script>
+<script data-bl-component="codetabs">
+{
+  const esc = (s) => s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  const kw = (w) => new RegExp(`\\b(?:${w.split(' ').join('|')})\\b`);
+  const STR = /(["'`])(?:\\[\s\S]|(?!\1)[^\\\n])*\1/;
+  const RULES = {
+    js: [[/\/\/[^\n]*|\/\*[\s\S]*?\*\//, 'c'], [STR, 's'], [kw('const let var function return if else for while do break continue new class extends import export from default async await try catch finally throw typeof instanceof in of this null undefined true false switch case yield'), 'k']],
+    py: [[/#[^\n]*/, 'c'], [/"""[\s\S]*?"""|'''[\s\S]*?'''/, 's'], [STR, 's'], [kw('def return if elif else for while in not and or import from as class with try except finally raise lambda None True False pass yield async await is global nonlocal'), 'k']],
+    sh: [[/(?:^|(?<=\s))#[^\n]*/, 'c'], [STR, 's'], [/^\s*(?:\$\s*)?[\w./-]+/m, 'k']],
+    json: [[/"(?:\\.|[^"\\\n])*"(?=\s*:)/, 'k'], [/"(?:\\.|[^"\\\n])*"/, 's'], [/\b(?:true|false|null)\b/, 'k']],
+    css: [[/\/\*[\s\S]*?\*\//, 'c'], [STR, 's'], [/[\w-]+(?=\s*:[^:])/, 'k']],
+    html: [[/<!--[\s\S]*?-->/, 'c'], [/"[^"\n]*"|'[^'\n]*'/, 's'], [/<\/?[\w-]+|\/?>/, 'k']],
+    http: [[/<!--[\s\S]*?-->/, 'c'], [/^#[^\n]*/m, 'c'], [/^(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\b|(?<=^HTTP\/[\d.]+ )\d{3}[^\n]*|^[\w-]+:/m, 'k'], [/(?<=^[\w-]+:[ \t]?)[^\n]+/m, 's']],
+  };
+  const ALIAS = { javascript: 'js', ts: 'js', typescript: 'js', jsx: 'js', tsx: 'js', mjs: 'js', python: 'py', bash: 'sh', shell: 'sh', zsh: 'sh', console: 'sh', xml: 'html', svg: 'html', yaml: 'py', yml: 'py', toml: 'py' };
+  const highlight = (text, lang) => {
+    const rules = RULES[ALIAS[lang] || lang];
+    if (!rules) return esc(text);
+    const res = rules.map(([re, cls]) => [new RegExp(re.source, re.flags.replace('g', '') + 'g'), cls]);
+    let out = '';
+    let i = 0;
+    while (i < text.length) {
+      let best = null;
+      for (const [re, cls] of res) {
+        re.lastIndex = i;
+        const m = re.exec(text);
+        if (m && m[0] && (!best || m.index < best.index)) best = { index: m.index, text: m[0], cls };
+      }
+      if (!best) { out += esc(text.slice(i)); break; }
+      out += esc(text.slice(i, best.index)) + `<span class="bl-hl-${best.cls}">${esc(best.text)}</span>`;
+      i = best.index + best.text.length;
+    }
+    return out;
+  };
+  for (const root of document.querySelectorAll('.bl-codetabs')) {
+    try {
+      const tabs = [...root.querySelectorAll('[role=tab]')];
+      const panels = [...root.querySelectorAll('[role=tabpanel]')];
+      const raw = panels.map((p) => {
+        const code = p.querySelector('code');
+        const text = code.textContent;
+        code.innerHTML = highlight(text, (code.dataset.lang || '').toLowerCase());
+        p.querySelector('.bl-tabname').hidden = true;
+        return text;
+      });
+      let cur = Math.max(0, tabs.findIndex((t) => t.getAttribute('aria-selected') === 'true'));
+      const select = (n, focus) => {
+        cur = (n + tabs.length) % tabs.length;
+        tabs.forEach((t, j) => {
+          t.setAttribute('aria-selected', String(j === cur));
+          t.tabIndex = j === cur ? 0 : -1;
+        });
+        panels.forEach((p, j) => { p.hidden = j !== cur; });
+        if (focus) tabs[cur].focus();
+      };
+      tabs.forEach((t, j) => {
+        t.addEventListener('click', () => select(j));
+        t.addEventListener('keydown', (e) => {
+          if (e.key === 'ArrowRight') { e.preventDefault(); select(cur + 1, true); }
+          if (e.key === 'ArrowLeft') { e.preventDefault(); select(cur - 1, true); }
+        });
+      });
+      const btn = root.querySelector('.bl-copy');
+      btn.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(raw[cur]);
+          btn.textContent = 'Copied';
+        } catch (_) {
+          btn.textContent = 'Select to copy';
+        }
+        setTimeout(() => { btn.textContent = 'Copy'; }, 1600);
+      });
+      root.querySelector('[role=tablist]').hidden = false;
+      select(cur);
+    } catch (e) {
+      console.error('blaude codetabs', e);
+    }
+  }
+}
+</script>
+</body>
+</html>

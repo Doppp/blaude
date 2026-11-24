@@ -1,0 +1,204 @@
+<!-- blaude component: chart. Line, bar or scatter chart drawn as SVG from an inline data table.
+     The table is the data source, the no-JS fallback, and shown on request (showTable). -->
+<style data-bl-component="chart">
+.bl-chart{margin:var(--bl-s4) 0}
+.bl-chart-title{font:600 16px/1.3 var(--bl-font-heading);margin:0 0 var(--bl-s1)}
+.bl-chart-legend{display:flex;flex-wrap:wrap;gap:0 var(--bl-s2);font:14px/1.4 var(--bl-font-heading);color:var(--bl-ink-muted)}
+.bl-chart-legend span{display:inline-flex;align-items:center;gap:var(--bl-s1)}
+.bl-chart-legend i{width:12px;height:3px;background:currentColor;flex:none}
+.bl-chart-legend b{font-weight:400;color:var(--bl-ink-muted)}
+.bl-chart-plot{position:relative;margin-top:var(--bl-s1);touch-action:pan-y}
+.bl-chart-plot svg{display:block;width:100%;overflow:visible}
+.bl-chart-plot:focus-visible{outline:2px solid var(--bl-accent);outline-offset:2px}
+.bl-chart-readout{min-height:1.5em;margin-top:var(--bl-s1);font:14px/1.5 var(--bl-font-heading);color:var(--bl-ink)}
+.bl-chart .bl-table{margin:var(--bl-s2) 0 0}
+.bl-chart figcaption{margin-top:var(--bl-s1);font:14px/1.5 var(--bl-font-heading);color:var(--bl-ink-muted)}
+.bl-chart .bl-ch-grid{stroke:var(--bl-rule);stroke-width:1}
+.bl-chart .bl-ch-axis{stroke:var(--bl-ink-muted);stroke-width:1}
+.bl-chart .bl-ch-tick{font-family:var(--bl-font-mono);font-size:13px;fill:var(--bl-ink-muted)}
+.bl-chart .bl-ch-label{font-family:var(--bl-font-heading);font-size:13px;fill:var(--bl-ink-muted)}
+.bl-chart .bl-ch-line{fill:none;stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round}
+.bl-chart .bl-ch-guide{stroke:var(--bl-ink-muted);stroke-width:1;stroke-dasharray:3 3}
+.bl-chart .bl-ch-dot.is-on{stroke:var(--bl-ink);stroke-width:2}
+.bl-chart .bl-ch-dot{stroke:var(--bl-bg);stroke-width:1.5}
+</style>
+<template data-bl-markup>
+<figure class="bl-chart" data-type="{{type}}"{{#unit}} data-unit="{{unit}}"{{/unit}}{{#yLabel}} data-y-label="{{yLabel}}"{{/yLabel}}{{#xLabel}} data-x-label="{{xLabel}}"{{/xLabel}}{{#showTable}} data-show-table{{/showTable}}>
+{{#title}}<div class="bl-chart-title">{{title}}</div>{{/title}}
+<div class="bl-chart-legend" hidden></div>
+<div class="bl-chart-plot" tabindex="0" hidden><svg role="img" aria-label="{{alt}}"></svg></div>
+<div class="bl-chart-readout" aria-live="polite" hidden></div>
+<div class="bl-table bl-chart-data"><table>
+<thead><tr>{{#columns}}<th scope="col">{{.}}</th>{{/columns}}</tr></thead>
+<tbody>{{#rows}}<tr>{{#.}}<td>{{.}}</td>{{/.}}</tr>
+{{/rows}}</tbody>
+</table></div>
+{{#caption}}<figcaption>{{caption}}</figcaption>{{/caption}}
+</figure>
+</template>
+<script data-bl-component="chart">
+{
+  const NS = 'http://www.w3.org/2000/svg';
+  const el = (name, attrs, text) => {
+    const n = document.createElementNS(NS, name);
+    for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+    if (text !== undefined) n.textContent = text;
+    return n;
+  };
+  const num = (s) => {
+    const v = parseFloat(String(s).replace(/[,\s%$€£]/g, ''));
+    return Number.isFinite(v) ? v : null;
+  };
+  const nice = (lo, hi, n = 5) => {
+    if (lo === hi) { hi = lo + 1; lo = lo - (lo ? 1 : 0); }
+    const span = hi - lo;
+    const step0 = Math.pow(10, Math.floor(Math.log10(span / n)));
+    const err = span / n / step0;
+    const step = step0 * (err >= 7.5 ? 10 : err >= 3.5 ? 5 : err >= 1.5 ? 2 : 1);
+    const a = Math.floor(lo / step) * step;
+    const b = Math.ceil(hi / step) * step;
+    const ticks = [];
+    for (let v = a; v <= b + step / 2; v += step) ticks.push(Math.round(v / step) * step);
+    return { a, b, ticks };
+  };
+  const fmt = (v, unit) => {
+    const s = Math.abs(v) >= 10000 ? new Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 1 }).format(v) : new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(v);
+    return unit ? `${s}${unit}` : s;
+  };
+  for (const root of document.querySelectorAll('.bl-chart')) {
+    try {
+      const table = root.querySelector('table');
+      const cols = [...table.querySelectorAll('thead th')].map((t) => t.textContent.trim());
+      const rows = [...table.querySelectorAll('tbody tr')].map((tr) => [...tr.children].map((c) => c.textContent.trim()));
+      if (cols.length < 2 || !rows.length) continue;
+      const type = ['line', 'bar', 'scatter'].includes(root.dataset.type) ? root.dataset.type : 'line';
+      const unit = root.dataset.unit || '';
+      const xs = rows.map((r) => r[0]);
+      const xNum = type !== 'bar' && xs.every((x) => num(x) !== null);
+      const series = cols.slice(1).map((name, s) => ({ name, color: `var(--bl-chart-${(s % 6) + 1})`, v: rows.map((r) => num(r[s + 1])) }));
+      const legend = root.querySelector('.bl-chart-legend');
+      const plot = root.querySelector('.bl-chart-plot');
+      const svg = plot.querySelector('svg');
+      const readout = root.querySelector('.bl-chart-readout');
+      const dataBox = root.querySelector('.bl-chart-data');
+      if (series.length > 1) {
+        for (const s of series) {
+          const sp = document.createElement('span');
+          sp.style.color = s.color;
+          const i = document.createElement('i');
+          const b = document.createElement('b');
+          b.textContent = s.name;
+          sp.append(i, b);
+          legend.append(sp);
+        }
+        legend.hidden = false;
+      }
+      plot.hidden = false;
+      readout.hidden = false;
+      if (!root.hasAttribute('data-show-table')) dataBox.hidden = true;
+      const all = series.flatMap((s) => s.v).filter((v) => v !== null);
+      let lo = Math.min(...all);
+      let hi = Math.max(...all);
+      if (type === 'bar' || (lo > 0 && lo < hi * 0.5)) lo = Math.min(0, lo);
+      if (type === 'bar') hi = Math.max(0, hi);
+      const Y = nice(lo, hi);
+      const xv = xNum ? xs.map(num) : null;
+      const X = xNum ? nice(Math.min(...xv), Math.max(...xv)) : null;
+      let cur = rows.length - 1;
+      let geom = null;
+
+      const draw = () => {
+        const W = plot.clientWidth;
+        if (!W) return;
+        const H = Math.round(Math.max(200, Math.min(340, W * 0.56)));
+        svg.replaceChildren();
+        svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+        svg.setAttribute('height', H);
+        const probe = el('text', { class: 'bl-ch-tick', x: 0, y: 0 }, fmt(Y.b, unit));
+        svg.append(probe);
+        const tw = Math.max(...Y.ticks.map((t) => { probe.textContent = fmt(t, unit); return probe.getComputedTextLength(); }));
+        probe.remove();
+        const m = { l: Math.ceil(tw) + 8, r: 8, t: 8, b: 28 };
+        const pw = W - m.l - m.r;
+        const ph = H - m.t - m.b;
+        const yAt = (v) => m.t + ph - ((v - Y.a) / (Y.b - Y.a)) * ph;
+        const n = rows.length;
+        const band = pw / n;
+        const xAt = (k) => (xNum ? m.l + ((xv[k] - X.a) / (X.b - X.a)) * pw : m.l + band * (k + 0.5));
+        for (const t of Y.ticks) {
+          svg.append(el('line', { class: 'bl-ch-grid', x1: m.l, x2: W - m.r, y1: yAt(t), y2: yAt(t) }));
+          svg.append(el('text', { class: 'bl-ch-tick', x: m.l - 8, y: yAt(t) + 4, 'text-anchor': 'end' }, fmt(t, unit)));
+        }
+        svg.append(el('line', { class: 'bl-ch-axis', x1: m.l, x2: W - m.r, y1: yAt(Math.max(Y.a, Math.min(Y.b, 0))), y2: yAt(Math.max(Y.a, Math.min(Y.b, 0))) }));
+        // x labels, thinned so they never collide
+        const labels = xNum ? X.ticks.map((t) => ({ x: m.l + ((t - X.a) / (X.b - X.a)) * pw, s: fmt(t) })) : xs.map((s, k) => ({ x: xAt(k), s }));
+        const probe2 = el('text', { class: 'bl-ch-tick' }, '');
+        svg.append(probe2);
+        const widest = Math.max(...labels.map((l) => { probe2.textContent = l.s; return probe2.getComputedTextLength(); }));
+        probe2.remove();
+        const spacing = labels.length > 1 ? Math.abs(labels[1].x - labels[0].x) : pw;
+        const every = Math.max(1, Math.ceil((widest + 12) / spacing));
+        labels.forEach((l, k) => {
+          if (k % every) return;
+          svg.append(el('text', { class: 'bl-ch-tick', x: l.x, y: H - 8, 'text-anchor': 'middle' }, l.s));
+        });
+        if (type === 'bar') {
+          const inner = band * 0.72;
+          const bw = inner / series.length;
+          const zero = yAt(Math.max(Y.a, Math.min(Y.b, 0)));
+          series.forEach((s, si) => s.v.forEach((v, k) => {
+            if (v === null) return;
+            const x = m.l + band * k + (band - inner) / 2 + bw * si;
+            const y = yAt(v);
+            svg.append(el('rect', { x, y: Math.min(y, zero), width: Math.max(1, bw - 2), height: Math.max(1, Math.abs(zero - y)), rx: 2, style: `fill:${s.color}` }));
+          }));
+        } else {
+          series.forEach((s) => {
+            const pts = s.v.map((v, k) => (v === null ? null : [xAt(k), yAt(v)]));
+            if (type === 'line') {
+              let d = '';
+              pts.forEach((p, k) => { if (p) d += `${d && pts[k - 1] ? 'L' : 'M'}${p[0].toFixed(1)} ${p[1].toFixed(1)}`; });
+              svg.append(el('path', { class: 'bl-ch-line', d, style: `stroke:${s.color}` }));
+            }
+            pts.forEach((p) => { if (p) svg.append(el('circle', { class: 'bl-ch-dot', cx: p[0], cy: p[1], r: type === 'scatter' ? 4.5 : 3.5, style: `fill:${s.color}` })); });
+          });
+        }
+        const guide = el('line', { class: 'bl-ch-guide', y1: m.t, y2: m.t + ph, x1: m.l, x2: m.l });
+        svg.append(guide);
+        geom = { xAt, guide, m, pw, n };
+        mark();
+      };
+      const mark = () => {
+        if (!geom) return;
+        const x = geom.xAt(cur);
+        geom.guide.setAttribute('x1', x);
+        geom.guide.setAttribute('x2', x);
+        readout.textContent = `${cols[0]} ${xs[cur]}: ` + series.map((s) => `${s.name} ${s.v[cur] === null ? '–' : fmt(s.v[cur], unit)}`).join(', ');
+      };
+      const pick = (clientX) => {
+        const r = svg.getBoundingClientRect();
+        const x = clientX - r.left;
+        let best = 0;
+        let d = Infinity;
+        for (let k = 0; k < rows.length; k++) {
+          const dk = Math.abs(geom.xAt(k) - x);
+          if (dk < d) { d = dk; best = k; }
+        }
+        cur = best;
+        mark();
+      };
+      plot.addEventListener('pointermove', (e) => pick(e.clientX));
+      plot.addEventListener('pointerdown', (e) => pick(e.clientX));
+      plot.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight') { e.preventDefault(); cur = Math.min(rows.length - 1, cur + 1); mark(); }
+        if (e.key === 'ArrowLeft') { e.preventDefault(); cur = Math.max(0, cur - 1); mark(); }
+      });
+      let lastW = 0;
+      new ResizeObserver(() => { if (Math.abs(plot.clientWidth - lastW) > 0.5) { lastW = plot.clientWidth; draw(); } }).observe(plot);
+      draw();
+    } catch (e) {
+      console.error('blaude chart', e);
+    }
+  }
+}
+</script>

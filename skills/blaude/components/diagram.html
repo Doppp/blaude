@@ -1,0 +1,28 @@
+<!-- blaude component: diagram. Boxes and arrows, flows, timelines, as inline SVG with real text labels.
+     Optional narrow version for phones (shown under 560px). Shapes use the bl-d-* classes so the
+     diagram follows the theme in light and dark. -->
+<style data-bl-component="diagram">
+.bl-diagram{margin:var(--bl-s4) 0}
+.bl-diagram svg{display:block;width:100%;height:auto;overflow:visible}
+.bl-diagram-wide{display:none}
+@media (min-width:560px){.bl-diagram-narrow{display:none}.bl-diagram-wide{display:block}}
+.bl-diagram figcaption{margin-top:var(--bl-s1);font:14px/1.5 var(--bl-font-heading);color:var(--bl-ink-muted)}
+.bl-diagram .bl-d-box{fill:var(--bl-surface);stroke:var(--bl-rule);stroke-width:1.5}
+.bl-diagram .bl-d-strong{fill:var(--bl-accent);stroke:var(--bl-accent)}
+.bl-diagram .bl-d-line{fill:none;stroke:var(--bl-ink-muted);stroke-width:1.5}
+.bl-diagram .bl-d-accent{fill:none;stroke:var(--bl-accent);stroke-width:2}
+.bl-diagram .bl-d-head{fill:var(--bl-ink-muted)}
+.bl-diagram .bl-d-text{fill:var(--bl-ink);font-family:var(--bl-font-heading)}
+.bl-diagram .bl-d-muted{fill:var(--bl-ink-muted);font-family:var(--bl-font-heading)}
+.bl-diagram .bl-d-on-strong{fill:var(--bl-accent-ink);font-family:var(--bl-font-heading);font-weight:600}
+.bl-diagram .bl-d-mono{fill:var(--bl-ink-muted);font-family:var(--bl-font-mono)}
+</style>
+<template data-bl-markup>
+<figure class="bl-diagram">
+<div role="img" aria-label="{{alt}}">
+{{#svgNarrow}}<div class="bl-diagram-narrow">{{{svgNarrow}}}</div><div class="bl-diagram-wide">{{{svg}}}</div>{{/svgNarrow}}
+{{^svgNarrow}}{{{svg}}}{{/svgNarrow}}
+</div>
+{{#caption}}<figcaption>{{caption}}</figcaption>{{/caption}}
+</figure>
+</template>

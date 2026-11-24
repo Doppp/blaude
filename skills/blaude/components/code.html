@@ -1,0 +1,74 @@
+<!-- blaude component: code. Highlighted code with a Copy button in its own toolbar row. -->
+<style data-bl-component="code">
+.bl-code{margin:var(--bl-s3) 0;background:var(--bl-surface);border-radius:var(--bl-radius);overflow:hidden}
+.bl-code-bar{display:flex;align-items:center;justify-content:space-between;gap:var(--bl-s2);padding:0 var(--bl-s2);min-height:44px;font:13px/1.2 var(--bl-font-mono);color:var(--bl-ink-muted)}
+.bl-code pre{margin:0;padding:0 var(--bl-s2) var(--bl-s2);background:none;border-radius:0;overflow-x:auto;font:14px/1.6 var(--bl-font-mono)}
+.bl-code pre:first-child{padding-top:var(--bl-s2)}
+.bl-copy{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;padding:0;margin-left:auto;border:0;background:none;color:var(--bl-accent);font:600 13px/1 var(--bl-font-heading);cursor:pointer;flex:none}
+.bl-hl-k{color:var(--bl-accent);font-weight:600}
+.bl-hl-s{color:var(--bl-good)}
+.bl-hl-c{color:var(--bl-ink-muted);font-style:italic}
+</style>
+<template data-bl-markup>
+<div class="bl-code">
+<div class="bl-code-bar" hidden><span>{{title}}</span><button class="bl-copy" type="button">Copy</button></div>
+<pre><code data-lang="{{lang}}">{{code}}</code></pre>
+</div>
+</template>
+<script data-bl-component="code">
+{
+  const esc = (s) => s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  const kw = (w) => new RegExp(`\\b(?:${w.split(' ').join('|')})\\b`);
+  const STR = /(["'`])(?:\\[\s\S]|(?!\1)[^\\\n])*\1/;
+  const RULES = {
+    js: [[/\/\/[^\n]*|\/\*[\s\S]*?\*\//, 'c'], [STR, 's'], [kw('const let var function return if else for while do break continue new class extends import export from default async await try catch finally throw typeof instanceof in of this null undefined true false switch case yield'), 'k']],
+    py: [[/#[^\n]*/, 'c'], [/"""[\s\S]*?"""|'''[\s\S]*?'''/, 's'], [STR, 's'], [kw('def return if elif else for while in not and or import from as class with try except finally raise lambda None True False pass yield async await is global nonlocal'), 'k']],
+    sh: [[/(?:^|(?<=\s))#[^\n]*/, 'c'], [STR, 's'], [/^\s*(?:\$\s*)?[\w./-]+/m, 'k']],
+    json: [[/"(?:\\.|[^"\\\n])*"(?=\s*:)/, 'k'], [/"(?:\\.|[^"\\\n])*"/, 's'], [/\b(?:true|false|null)\b/, 'k']],
+    css: [[/\/\*[\s\S]*?\*\//, 'c'], [STR, 's'], [/[\w-]+(?=\s*:[^:])/, 'k']],
+    html: [[/<!--[\s\S]*?-->/, 'c'], [/"[^"\n]*"|'[^'\n]*'/, 's'], [/<\/?[\w-]+|\/?>/, 'k']],
+    http: [[/<!--[\s\S]*?-->/, 'c'], [/^#[^\n]*/m, 'c'], [/^(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\b|(?<=^HTTP\/[\d.]+ )\d{3}[^\n]*|^[\w-]+:/m, 'k'], [/(?<=^[\w-]+:[ \t]?)[^\n]+/m, 's']],
+  };
+  const ALIAS = { javascript: 'js', ts: 'js', typescript: 'js', jsx: 'js', tsx: 'js', mjs: 'js', python: 'py', bash: 'sh', shell: 'sh', zsh: 'sh', console: 'sh', xml: 'html', svg: 'html', yaml: 'py', yml: 'py', toml: 'py' };
+  const highlight = (text, lang) => {
+    const rules = RULES[ALIAS[lang] || lang];
+    if (!rules) return esc(text);
+    const res = rules.map(([re, cls]) => [new RegExp(re.source, re.flags.replace('g', '') + 'g'), cls]);
+    let out = '';
+    let i = 0;
+    while (i < text.length) {
+      let best = null;
+      for (const [re, cls] of res) {
+        re.lastIndex = i;
+        const m = re.exec(text);
+        if (m && m[0] && (!best || m.index < best.index)) best = { index: m.index, text: m[0], cls };
+      }
+      if (!best) { out += esc(text.slice(i)); break; }
+      out += esc(text.slice(i, best.index)) + `<span class="bl-hl-${best.cls}">${esc(best.text)}</span>`;
+      i = best.index + best.text.length;
+    }
+    return out;
+  };
+  const copy = async (btn, text) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      btn.textContent = 'Copied';
+    } catch (_) {
+      btn.textContent = 'Select to copy';
+    }
+    setTimeout(() => { btn.textContent = 'Copy'; }, 1600);
+  };
+  for (const root of document.querySelectorAll('.bl-code')) {
+    try {
+      const code = root.querySelector('code');
+      const raw = code.textContent;
+      code.innerHTML = highlight(raw, (code.dataset.lang || '').toLowerCase());
+      const bar = root.querySelector('.bl-code-bar');
+      bar.hidden = false;
+      bar.querySelector('.bl-copy').addEventListener('click', (e) => copy(e.currentTarget, raw));
+    } catch (e) {
+      console.error('blaude code', e);
+    }
+  }
+}
+</script>

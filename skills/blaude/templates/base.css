@@ -75,7 +75,7 @@ a{color:var(--bl-accent);text-underline-offset:.2em;text-decoration-thickness:1p
 /* Footer */
 .bl-foot{margin-top:var(--bl-s4);border-top:1px solid var(--bl-rule);font:15px/1.5 var(--bl-font-heading);color:var(--bl-ink-muted)}
 .bl-foot .bl-col{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:0 var(--bl-s2);padding-top:var(--bl-s2);padding-bottom:max(var(--bl-s4),env(safe-area-inset-bottom))}
-.bl-foot a{display:inline-flex;align-items:center;min-height:44px;text-decoration:none}
+.bl-foot a{display:inline-flex;align-items:center;min-height:44px}
 
 /* Reserve the height of the tallest item: children share one grid cell */
 .bl-stack{display:grid}

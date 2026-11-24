@@ -1,0 +1,293 @@
+<!-- blaude component: sequence. Animated sequence diagram: lifelines with messages that fly
+     between them, grouped into stages. Play, previous/next, arrow keys; optional mode switch and
+     live counter; redraws on resize. Without JS it is a list of messages per mode. -->
+<style data-bl-component="sequence">
+.bl-sequence{margin:var(--bl-s4) 0;padding:var(--bl-s3) 0;border-top:1px solid var(--bl-rule);border-bottom:1px solid var(--bl-rule)}
+.bl-seq-head{display:flex;flex-wrap:wrap;align-items:center;gap:var(--bl-s1) var(--bl-s2)}
+.bl-seg{display:inline-flex;flex-wrap:wrap;border:1px solid var(--bl-rule);border-radius:var(--bl-radius);background:var(--bl-surface);overflow:hidden}
+.bl-seg button{min-height:44px;min-width:44px;padding:0 var(--bl-s2);border:0;border-radius:0;background:none;color:var(--bl-ink-muted);font:600 14px/1 var(--bl-font-heading);cursor:pointer}
+.bl-seg button[aria-pressed=true]{background:var(--bl-bg);color:var(--bl-ink);box-shadow:inset 0 0 0 1px var(--bl-rule)}
+.bl-seq-counter{font:600 14px/1.2 var(--bl-font-heading);color:var(--bl-ink-muted)}
+.bl-seq-counter b{color:var(--bl-accent);font-size:16px}
+.bl-seq-fig{margin-top:var(--bl-s2)}
+.bl-seq-fig svg{display:block;width:100%}
+.bl-seq-text{display:grid;margin:var(--bl-s2) 0 var(--bl-s1);font:16px/1.5 var(--bl-font-heading)}
+.bl-seq-text>div{grid-area:1/1}
+.bl-seq-text>[aria-hidden=true]{visibility:hidden}
+.bl-seq-text strong{display:block;font-size:17px}
+.bl-seq-controls{display:flex;flex-wrap:wrap;align-items:center;gap:var(--bl-s1);font:14px/1.2 var(--bl-font-heading)}
+.bl-seq-count{margin-left:auto;color:var(--bl-ink-muted)}
+.bl-seq-data{font:16px/1.5 var(--bl-font-heading)}
+.bl-seq-data h3{font:600 16px/1.3 var(--bl-font-heading);margin:var(--bl-s2) 0 var(--bl-s1)}
+.bl-seq-data ol,.bl-seq-lanes{margin:0;padding-left:var(--bl-s3)}
+.bl-seq-lanes{list-style:none;padding:0;display:flex;flex-wrap:wrap;gap:0 var(--bl-s2);font-weight:600}
+.bl-seq-route{display:block;font:14px/1.4 var(--bl-font-mono);color:var(--bl-ink-muted)}
+.bl-sequence figcaption{margin-top:var(--bl-s2);font:14px/1.5 var(--bl-font-heading);color:var(--bl-ink-muted)}
+.bl-sequence .bl-sq-band{fill:var(--bl-surface)}
+.bl-sequence .bl-sq-band.is-later{opacity:.45}
+.bl-sequence .bl-sq-group{font:600 13px var(--bl-font-heading);fill:var(--bl-ink-muted);stroke:var(--bl-surface);stroke-width:4;paint-order:stroke}
+.bl-sequence .bl-sq-lane{stroke:var(--bl-rule);stroke-width:2}
+.bl-sequence .bl-sq-name{font-family:var(--bl-font-heading);font-weight:600;fill:var(--bl-ink);text-anchor:middle}
+.bl-sequence .bl-sq-msg{stroke:var(--bl-accent);stroke-width:1.5;opacity:.7}
+.bl-sequence .bl-sq-msg.is-on{stroke-width:2.5;opacity:1}
+.bl-sequence .bl-sq-head{fill:var(--bl-accent)}
+.bl-sequence .bl-sq-label{font-family:var(--bl-font-heading);font-size:13px;fill:var(--bl-ink-muted);text-anchor:middle;stroke:var(--bl-surface);stroke-width:5;paint-order:stroke}
+.bl-sequence .bl-sq-label.is-on{font-weight:600;fill:var(--bl-ink)}
+.bl-sequence .bl-sq-packet{fill:var(--bl-warn);stroke:var(--bl-bg);stroke-width:2}
+</style>
+<template data-bl-markup>
+<figure class="bl-sequence" id="{{id}}"{{#counter}} data-counter="{{counter}}"{{/counter}}>
+{{#hasHead}}<div class="bl-seq-head" hidden>
+{{#hasModes}}<div class="bl-seg" role="group" aria-label="{{modesLabel}}">{{#modes}}<button type="button" data-mode="{{@index}}" aria-pressed="{{#@first}}true{{/@first}}{{^@first}}false{{/@first}}">{{name}}</button>{{/modes}}</div>{{/hasModes}}
+{{#counter}}<span class="bl-seq-counter" aria-live="polite"></span>{{/counter}}
+</div>{{/hasHead}}
+<div class="bl-seq-fig" hidden><svg role="img" aria-label="{{alt}}"></svg></div>
+<div class="bl-seq-text" aria-live="polite" hidden></div>
+<div class="bl-seq-controls" hidden>
+<button class="bl-btn bl-btn--primary" type="button" data-act="play">Play</button>
+<button class="bl-btn" type="button" data-act="prev" aria-label="Previous message">←</button>
+<button class="bl-btn" type="button" data-act="next" aria-label="Next message">→</button>
+<span class="bl-seq-count"></span>
+</div>
+<div class="bl-seq-data">
+<ul class="bl-seq-lanes">{{#lanes}}<li{{#short}} data-short="{{short}}"{{/short}}>{{name}}</li>{{/lanes}}</ul>
+{{#modes}}<section class="bl-seq-mode" data-name="{{name}}">
+{{#hasModes}}<h3>{{name}}</h3>{{/hasModes}}
+{{#intro}}<p class="bl-seq-intro" data-title="{{title}}">{{text}}</p>{{/intro}}
+<ol>{{#messages}}<li data-from="{{from}}" data-to="{{to}}" data-label="{{label}}"{{#group}} data-group="{{group}}"{{/group}}><span class="bl-seq-route">{{from}} → {{to}}: {{label}}</span><strong>{{title}}</strong> {{text}}</li>
+{{/messages}}</ol>
+</section>
+{{/modes}}
+</div>
+{{#caption}}<figcaption>{{caption}}</figcaption>{{/caption}}
+</figure>
+</template>
+<script data-bl-component="sequence">
+{
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const NS = 'http://www.w3.org/2000/svg';
+  const el = (name, attrs, text) => {
+    const n = document.createElementNS(NS, name);
+    for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+    if (text !== undefined) n.textContent = text;
+    return n;
+  };
+  const txt = (title, text) => {
+    const d = document.createElement('div');
+    const b = document.createElement('strong');
+    b.textContent = title;
+    d.append(b, document.createTextNode(text));
+    return d;
+  };
+  let uid = 0;
+  for (const root of document.querySelectorAll('.bl-sequence')) {
+    try {
+      const data = root.querySelector('.bl-seq-data');
+      const laneEls = [...data.querySelectorAll('.bl-seq-lanes > li')];
+      const lanes = laneEls.map((l) => ({ name: l.textContent.trim(), short: l.dataset.short || '' }));
+      const laneIndex = (n) => lanes.findIndex((l) => l.name === n);
+      const modes = [...data.querySelectorAll('.bl-seq-mode')].map((sec) => {
+        const intro = sec.querySelector('.bl-seq-intro');
+        return {
+          intro: intro ? { title: intro.dataset.title || '', text: intro.textContent.trim() } : null,
+          msgs: [...sec.querySelectorAll('ol > li')].map((li) => {
+            const strong = li.querySelector('strong');
+            const title = strong ? strong.textContent : '';
+            let body = '';
+            for (let n = strong ? strong.nextSibling : null; n; n = n.nextSibling) body += n.textContent;
+            return { f: laneIndex(li.dataset.from), t: laneIndex(li.dataset.to), l: li.dataset.label || '', g: li.dataset.group || '', h: title, d: body.trim() };
+          }).filter((m) => m.f >= 0 && m.t >= 0),
+        };
+      });
+      if (!lanes.length || !modes.length) continue;
+      const counterLabel = root.dataset.counter || '';
+      const head = root.querySelector('.bl-seq-head');
+      const fig = root.querySelector('.bl-seq-fig');
+      const svg = fig.querySelector('svg');
+      const textBox = root.querySelector('.bl-seq-text');
+      const ctr = root.querySelector('.bl-seq-controls');
+      const counter = root.querySelector('.bl-seq-counter');
+      const cnt = ctr.querySelector('.bl-seq-count');
+      const playB = ctr.querySelector('[data-act=play]');
+      const prevB = ctr.querySelector('[data-act=prev]');
+      const nextB = ctr.querySelector('[data-act=next]');
+      const markerId = `bl-sq-ah-${++uid}`;
+
+      // Step texts for every mode share one grid cell, so the box keeps the tallest height.
+      const texts = modes.map((m) => {
+        const intro = txt(m.intro ? m.intro.title : '', m.intro ? m.intro.text : '');
+        const list = m.msgs.map((x) => txt(x.h, x.d));
+        textBox.append(intro, ...list);
+        return { intro, list };
+      });
+
+      data.hidden = true;
+      if (head) head.hidden = false;
+      fig.hidden = false;
+      textBox.hidden = false;
+      ctr.hidden = false;
+
+      let mode = 0;
+      let i = -1;
+      let anim = null;
+      let timer = null;
+      let packet = null;
+      const ROW = 46;
+      const TOP = 56;
+      const geo = () => {
+        const W = fig.clientWidth;
+        const n = lanes.length;
+        const H = TOP + modes[mode].msgs.length * ROW + 20;
+        const inset = n > 1 ? 0.13 : 0.5;
+        const xs = lanes.map((_, j) => (n > 1 ? W * (inset + ((1 - 2 * inset) * j) / (n - 1)) : W / 2));
+        return { W, H, xs, y: (k) => TOP + 20 + k * ROW };
+      };
+      const draw = () => {
+        const { W, H, xs, y } = geo();
+        if (!W) return;
+        const msgs = modes[mode].msgs;
+        const small = W < 480;
+        svg.replaceChildren();
+        svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+        svg.setAttribute('height', H);
+        const defs = el('defs', {});
+        const marker = el('marker', { id: markerId, viewBox: '0 0 10 10', refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: 'auto-start-reverse' });
+        marker.append(el('path', { d: 'M0 0L10 5L0 10z', class: 'bl-sq-head' }));
+        defs.append(marker);
+        svg.append(defs);
+        const groups = [];
+        let k = 0;
+        while (k < msgs.length) {
+          const g = msgs[k].g;
+          let e = k;
+          while (e + 1 < msgs.length && msgs[e + 1].g === g) e++;
+          svg.append(el('rect', { class: `bl-sq-band${k <= i ? '' : ' is-later'}`, x: 0, y: y(k) - ROW / 2 + 4, width: W, height: (e - k + 1) * ROW - 8, rx: 8 }));
+          if (g) groups.push([g, y(k) - ROW / 2 + 22]);
+          k = e + 1;
+        }
+        lanes.forEach((ln, j) => {
+          svg.append(el('line', { class: 'bl-sq-lane', x1: xs[j], y1: TOP - 6, x2: xs[j], y2: H - 8 }));
+          svg.append(el('text', { class: 'bl-sq-name', x: xs[j], y: TOP - 18, 'font-size': small ? 13 : 14 }, small && ln.short ? ln.short : ln.name));
+        });
+        for (const [g, gy] of groups) svg.append(el('text', { class: 'bl-sq-group', x: 8, y: gy }, g));
+        msgs.forEach((m, j) => {
+          if (j > i) return;
+          const yy = y(j);
+          const x1 = xs[m.f];
+          const x2 = xs[m.t];
+          const dir = Math.sign(x2 - x1) || 1;
+          const cur = j === i;
+          const flying = !!(anim && cur && packet);
+          const ex = flying ? packet.x : x2 - dir * 4;
+          const attrs = { class: `bl-sq-msg${cur ? ' is-on' : ''}`, x1: x1 + dir * 4, y1: yy, x2: ex, y2: yy };
+          if (!flying) attrs['marker-end'] = `url(#${markerId})`;
+          svg.append(el('line', attrs));
+          if (!flying) svg.append(el('text', { class: `bl-sq-label${cur ? ' is-on' : ''}`, x: (x1 + x2) / 2, y: yy - 8 }, m.l));
+        });
+        if (anim && packet) svg.append(el('circle', { class: 'bl-sq-packet', cx: packet.x, cy: packet.y, r: 6 }));
+      };
+      const trips = () => {
+        let n = 0;
+        const msgs = modes[mode].msgs;
+        for (let j = 0; j <= i && j < msgs.length; j++) if (msgs[j].t === 0 && msgs[j].f !== 0) n++;
+        return n;
+      };
+      const show = () => {
+        const msgs = modes[mode].msgs;
+        texts.forEach((t, mi) => {
+          t.intro.setAttribute('aria-hidden', String(!(mi === mode && i < 0)));
+          t.list.forEach((d, j) => d.setAttribute('aria-hidden', String(!(mi === mode && j === i))));
+        });
+        cnt.textContent = `${Math.max(i + 1, 0)} of ${msgs.length}`;
+        if (counter) {
+          counter.textContent = `${counterLabel}: `;
+          const b = document.createElement('b');
+          b.textContent = String(trips());
+          counter.append(b);
+        }
+        prevB.disabled = i <= 0 || !!anim;
+        nextB.disabled = i >= msgs.length - 1 || !!anim;
+        draw();
+      };
+      const stop = () => {
+        if (anim) cancelAnimationFrame(anim);
+        if (timer) clearInterval(timer);
+        anim = null;
+        timer = null;
+        packet = null;
+        playB.textContent = 'Play';
+      };
+      const play = () => {
+        stop();
+        const msgs = modes[mode].msgs;
+        i = -1;
+        show();
+        if (reduce) {
+          playB.textContent = 'Playing…';
+          timer = setInterval(() => {
+            if (i >= msgs.length - 1) {
+              clearInterval(timer);
+              timer = null;
+              playB.textContent = 'Replay';
+              return;
+            }
+            i++;
+            show();
+          }, 1300);
+          return;
+        }
+        playB.textContent = 'Playing…';
+        const fly = 650;
+        const hold = 1250;
+        let t0 = null;
+        const tick = (ts) => {
+          if (t0 === null) t0 = ts;
+          const t = ts - t0;
+          const k = Math.floor(t / (fly + hold));
+          if (k >= msgs.length) {
+            i = msgs.length - 1;
+            anim = null;
+            packet = null;
+            playB.textContent = 'Replay';
+            show();
+            return;
+          }
+          const u = t - k * (fly + hold);
+          const { xs, y } = geo();
+          const m = msgs[k];
+          i = k;
+          if (u < fly) {
+            const f = u / fly;
+            const e = f < 0.5 ? 2 * f * f : 1 - (-2 * f + 2) ** 2 / 2;
+            packet = { x: xs[m.f] + (xs[m.t] - xs[m.f]) * e, y: y(k) };
+          } else packet = null;
+          anim = requestAnimationFrame(tick);
+          show();
+        };
+        anim = requestAnimationFrame(tick);
+      };
+      root.querySelectorAll('.bl-seg button').forEach((b) => b.addEventListener('click', () => {
+        stop();
+        mode = Number(b.dataset.mode);
+        i = -1;
+        root.querySelectorAll('.bl-seg button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+        show();
+      }));
+      playB.addEventListener('click', play);
+      prevB.addEventListener('click', () => { if (i > 0) { i--; show(); } });
+      nextB.addEventListener('click', () => { if (i < modes[mode].msgs.length - 1) { stop(); i++; show(); } });
+      root.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight') { e.preventDefault(); nextB.click(); }
+        if (e.key === 'ArrowLeft') { e.preventDefault(); prevB.click(); }
+      });
+      let lastW = 0;
+      new ResizeObserver(() => {
+        if (Math.abs(fig.clientWidth - lastW) > 0.5) { lastW = fig.clientWidth; draw(); }
+      }).observe(fig);
+      show();
+    } catch (e) {
+      console.error('blaude sequence', e);
+    }
+  }
+}
+</script>

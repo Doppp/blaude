@@ -1,0 +1,14 @@
+<!-- blaude component: figure. An image or SVG with a caption. Alt text is required. -->
+<style data-bl-component="figure">
+.bl-figure{margin:var(--bl-s4) 0}
+.bl-figure img{display:block;max-width:100%;height:auto;border-radius:var(--bl-radius)}
+.bl-figure-svg svg{display:block;width:100%;height:auto}
+.bl-figure figcaption{margin-top:var(--bl-s1);font:14px/1.5 var(--bl-font-heading);color:var(--bl-ink-muted)}
+</style>
+<template data-bl-markup>
+<figure class="bl-figure">
+{{#src}}<img src="{{src}}" alt="{{alt}}"{{#width}} width="{{width}}" height="{{height}}"{{/width}} decoding="async">{{/src}}
+{{#svg}}<div class="bl-figure-svg" role="img" aria-label="{{alt}}">{{{svg}}}</div>{{/svg}}
+{{#caption}}<figcaption>{{caption}}</figcaption>{{/caption}}
+</figure>
+</template>
