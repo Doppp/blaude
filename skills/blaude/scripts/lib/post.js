@@ -2,6 +2,7 @@
 // Build a post artifact from Markdown (with ::: component blocks) and the blog's config.
 
 const fs = require('fs');
+const crypto = require('crypto');
 const path = require('path');
 const { render, frontMatter, textOf } = require('./markdown');
 const { mustache } = require('./mustache');
@@ -15,6 +16,20 @@ const longDate = (d) => `${Number(d.slice(8, 10))} ${M[Number(d.slice(5, 7)) - 1
 
 /** JSON that is safe inside <script type="application/json">. */
 const jsonForScript = (v) => JSON.stringify(v, null, 2).replace(/</g, '\\u003c').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
+
+// The post keeps its own Markdown source, so edits and exports are exact.
+// Images are stored once, in the page; the source refers to them by hash.
+const DATA_URI = /data:image\/[a-z0-9.+-]+;base64,[A-Za-z0-9+/=]+/gi;
+const hash = (u) => crypto.createHash('sha1').update(u).digest('hex').slice(0, 12);
+const packSource = (md) => md.replace(DATA_URI, (u) => `blaude-img:${hash(u)}`);
+function unpackSource(html) {
+  const m = html.match(/<script type="application\/json" id="blaude-source">([\s\S]*?)<\/script>/);
+  if (!m) return null;
+  const { markdown } = JSON.parse(m[1]);
+  const map = {};
+  for (const u of html.match(DATA_URI) || []) map[hash(u)] = u;
+  return markdown.replace(/blaude-img:([0-9a-f]{12})/g, (all, h) => map[h] || all);
+}
 
 function readingMinutes(html) {
   const words = textOf(html).split(/\s+/).filter(Boolean).length;
@@ -84,6 +99,7 @@ function buildPost({ source, blog, indexUrl, theme, url = '', status = 'draft' }
     hasRelated: related.length > 0,
     related,
     metaJson: jsonForScript(meta),
+    sourceJson: jsonForScript({ markdown: packSource(source) }),
     componentJs: assets.js,
   });
   const entry = {
@@ -101,4 +117,4 @@ function buildPost({ source, blog, indexUrl, theme, url = '', status = 'draft' }
   return { html, meta, entry };
 }
 
-module.exports = { buildPost, jsonForScript, longDate, readingMinutes, VERSION };
+module.exports = { buildPost, unpackSource, jsonForScript, longDate, readingMinutes, VERSION };
