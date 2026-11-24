@@ -1,0 +1,15 @@
+{
+  "name": "blaude",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Blogging with Claude: a Claude plugin that turns your writing into a blog made of Claude artifacts.",
+  "license": "MIT",
+  "type": "commonjs",
+  "scripts": {
+    "build": "node tools/build.js",
+    "check": "node tools/check-artifact.js && node tools/check-theme.js"
+  },
+  "devDependencies": {
+    "playwright": "1.62.1"
+  }
+}

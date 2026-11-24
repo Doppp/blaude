@@ -1,0 +1,14 @@
+{
+  "name": "blaude",
+  "displayName": "Blaude",
+  "version": "1.0.0",
+  "description": "Blogging with Claude: turn your writing into a blog made of Claude artifacts, with one index page and one page per post.",
+  "author": {
+    "name": "Doppp",
+    "url": "https://github.com/Doppp"
+  },
+  "homepage": "https://github.com/Doppp/blaude",
+  "repository": "https://github.com/Doppp/blaude",
+  "license": "MIT",
+  "keywords": ["blog", "artifacts", "writing", "publishing"]
+}

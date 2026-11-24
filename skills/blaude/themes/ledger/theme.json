@@ -1,0 +1,13 @@
+{
+  "name": "ledger",
+  "displayName": "Ledger",
+  "author": "Blaude",
+  "description": "The default. A contents page: your name, an intro, and posts grouped by year.",
+  "fonts": [
+    "Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;1,7..72,400",
+    "Instrument Sans:wght@400;600",
+    "JetBrains Mono:wght@400;600"
+  ],
+  "blaude": "1.0",
+  "indexLayout": "ledger"
+}

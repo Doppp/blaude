@@ -1,0 +1,3 @@
+/* Optional. Small component tweaks only. Every selector must start with .bl-.
+   Not allowed here: fixed widths, position: fixed, 100vw, @import of other hosts,
+   spacing outside --bl-s1..--bl-s4. Delete this file if you don't need it. */
