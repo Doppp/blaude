@@ -137,7 +137,7 @@ async function main() {
       if (fs.existsSync(ovPath)) errors.push(...lintCss(read(ovPath), { kind: 'overrides', where: 'overrides.css' }));
 
       const preview = path.join(dir, 'preview.html');
-      if (!fs.existsSync(preview)) warnings.push('no preview.html yet (run node tools/build.js)');
+      if (!fs.existsSync(preview)) errors.push('missing preview.html (run node tools/build.js)');
 
       const pages = themePages(name, dir);
       for (const p of pages) {

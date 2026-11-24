@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="{{lang}}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>{{pageTitle}}</title>
+<meta name="description" content="{{description}}">
+<meta property="og:type" content="article">
+<meta property="og:title" content="{{title}}">
+<meta property="og:description" content="{{description}}">
+<meta property="og:site_name" content="{{blogName}}">
+{{#ogImage}}<meta property="og:image" content="{{ogImage}}">
+{{/ogImage}}<meta property="article:published_time" content="{{date}}">
+<meta name="twitter:card" content="{{#ogImage}}summary_large_image{{/ogImage}}{{^ogImage}}summary{{/ogImage}}">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="{{fontsHref}}">
+<style>
+{{{tokensCss}}}
+{{{baseCss}}}
+{{{componentCss}}}
+{{{overridesCss}}}
+</style>
+</head>
+<body>
+<header class="bl-bar"><div class="bl-col" data-bl-region="header"><a href="{{indexUrl}}">{{blogName}}</a><nav aria-label="Blog"><a href="{{indexUrl}}#about">About</a></nav></div></header>
+<main class="bl-col bl-post" data-bl-region="body">
+<article>
+<h1 class="bl-title">{{title}}</h1>
+<div class="bl-meta"><time datetime="{{date}}">{{dateText}}</time><span>{{readingMinutes}} min read</span>{{#tagsText}}<span>{{tagsText}}</span>{{/tagsText}}</div>
+<div class="bl-body">
+{{{bodyHtml}}}
+</div>
+</article>
+{{#hasRelated}}<section class="bl-related" aria-labelledby="bl-related-h">
+<h2 id="bl-related-h">Related</h2>
+<ul>{{#related}}<li><a href="{{url}}"><span class="bl-related-t">{{title}}</span>{{#note}}<span class="bl-related-n">{{note}}</span>{{/note}}</a></li>{{/related}}</ul>
+</section>
+{{/hasRelated}}</main>
+<footer class="bl-foot"><div class="bl-col" data-bl-region="footer"><a href="{{indexUrl}}">← All posts</a><span>Made with Blaude</span></div></footer>
+<script type="application/json" id="blaude-post">{{{metaJson}}}</script>
+{{{componentJs}}}
+</body>
+</html>
